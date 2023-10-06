@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from torch import nn, from_numpy
 from abc import ABCMeta, abstractmethod
 from sklearn.gaussian_process.kernels import PairwiseKernel
+from sklearn.linear_model import LinearRegression
 
 
 
@@ -18,6 +19,47 @@ class PredictionModel(metaclass=ABCMeta):
         raise NotImplementedError
 
 
+# * Linear mechanisms *
+class LinearMechanism(PredictionModel):
+    """Linear causal mechanism by linear regression.
+
+    Parameters
+    ----------
+    min_weight: float, default is -1
+        Minimum value of causal mechanisms weights
+    max_weight: float, default is 1
+        Maximum value of causal mechanisms weights
+    min_abs_weight: float, default is 0.05
+        Minimum value of the absolute value of any causal mechanism weight.
+        Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
+    """
+
+    def __init__(
+        self,
+        min_weight: float,
+        max_weight: float,
+        min_abs_weight: float
+    ):
+        self.min_weight = min_weight
+        self.max_weight = max_weight
+        self.min_abs_weight = min_abs_weight
+    
+    def predict(self, X: NDArray) -> NDArray:
+        n_covariates = X.shape[1]        
+        linear_reg = LinearRegression()
+        linear_reg.coef_ = np.random.uniform(self.min_weight, self.max_weight, n_covariates) 
+
+        # Reject ~0 coefficients
+        for i in range(n_covariates):
+            while (abs(linear_reg.coef_[i]) < self.min_abs_weight):
+                linear_reg.coef_[i] = np.random.uniform(self.min_weight, self.max_weight, 1)
+            
+        linear_reg.intercept_ = 0
+        y = linear_reg.predict(X)
+        return y
+
+
+# * Nonlinear mechanisms *
 class NeuralNetMechanism(PredictionModel):
     """Nonlinear causal mechanism parametrized by a neural network.
     """
@@ -25,11 +67,13 @@ class NeuralNetMechanism(PredictionModel):
         self,
         weights_mean: float = 0.,
         weights_std: float = 1.,
-        hidden_dim: int = 10 
+        hidden_dim: int = 10,
+        activation: nn.Module = nn.Prelu()
     ):
         self.weights_mean = weights_mean
         self.weights_std = weights_std
         self.hidden_dim = hidden_dim
+        self.activation = activation
 
 
     def predict(
@@ -58,7 +102,7 @@ class NeuralNetMechanism(PredictionModel):
         layers = []
 
         layers.append(nn.modules.Linear(n_causes, self.hidden_dim))
-        layers.append(nn.PReLU())
+        layers.append(self.activation)
         layers.append(nn.LayerNorm(self.hidden_dim)) # Avoid magnitude increase in causal direction
         layers.append(nn.modules.Linear(self.hidden_dim, 1))
 
