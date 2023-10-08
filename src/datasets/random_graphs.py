@@ -3,6 +3,8 @@ import numpy as np
 import networkx as nx
 from abc import ABCMeta, abstractmethod
 
+from utils.data import max_edges_in_dag
+
 
 # Base class
 class GraphGenerator(metaclass=ABCMeta):
@@ -12,6 +14,11 @@ class GraphGenerator(metaclass=ABCMeta):
     @abstractmethod
     def get_random_graph(self):
         raise NotImplementedError()
+
+    def _manual_seed(self, seed: int):
+        """Set manual seed for deterministic graph generation. If None, seed is not set."""
+        if seed is not None:
+            np.random.seed(seed)
     
 
     def _make_random_order(self, A):
@@ -23,16 +30,17 @@ class GraphGenerator(metaclass=ABCMeta):
         return A
 
 
-################################################################
-# -------- Gaussian Random Partition Graphs Generator -------- #
-################################################################
+# ***************************************** #
+# Gaussian Random Partition Graphs Generator 
+# ***************************************** #
 class GaussianRandomPartition(GraphGenerator):
     def __init__(
         self,
-        num_nodes,
-        p_in,
-        p_out,
-        n_clusters
+        num_nodes: float,
+        p_in: float,
+        p_out: float,
+        n_clusters: int,
+        min_cluster_size: int = 2
     ):
         """
         Generator of Gaussian Random Partition directed acyclic graphs.
@@ -40,13 +48,15 @@ class GaussianRandomPartition(GraphGenerator):
         Parameters
         ----------
         num_nodes : int
-            Number of nodes
+            Number of nodes.
         p_in : float
-            Probability of edge connection with nodes in the cluster
+            Probability of edge connection with nodes in the cluster.
         p_out : float
-            Probability of edge connection with nodes in different clusters
+            Probability of edge connection with nodes in different clusters.
         n_clusters : int
-            Number of clusters in the graph. 
+            Number of clusters in the graph.
+        min_cluster_size: int, default 2
+            Minimum number of elements for each cluser.
 
         Attributes
         ----------
@@ -54,18 +64,22 @@ class GaussianRandomPartition(GraphGenerator):
             The size of the graph's clusters. This is randomly sampled from a multinomial
             distribution with parameters TODO: which paremeters?
         """
-        if num_nodes/n_clusters < 2:
-            raise ValueError("Expected ratio between num_nodes and 'n_clusters' must be at least two"\
-                             f"Instead got {num_nodes/n_clusters}. Decrease the number of clusters required.")
+        if num_nodes/n_clusters < min_cluster_size:
+            raise ValueError(f"Expected ratio `num_nodes/n_clusters' must be at least {min_cluster_size}"\
+                             f" Instead got {num_nodes/n_clusters}. Decrease `n_clusters` or `min_cluster_size`.")
+                             
 
         super().__init__(num_nodes)
         self.p_in = p_in
         self.p_out = p_out
         self.n_clusters = n_clusters
+        self.min_cluster_size = min_cluster_size
         self.size_of_clusters = self._sample_cluster_sizes()
 
 
-    def get_random_graph(self):
+    def get_random_graph(self, seed: int = None):
+        self._manual_seed(seed)
+
         # print(f"size of the clusters: {size_of_clusters}")
 
         # Initialize with the first cluster and remove it from the list
@@ -90,8 +104,8 @@ class GaussianRandomPartition(GraphGenerator):
         cluster_sizes = np.random.multinomial(
             self.num_nodes, pvals=[1/self.n_clusters for _ in range(self.n_clusters)]
         )
-        # At least 3 elements per cluster
-        while np.min(cluster_sizes) < 3:
+        # At least 3 elements per cluster. Take elements from largest to smallest cluster
+        while np.min(cluster_sizes) < self.min_cluster_size:
             argmax = np.argmax(cluster_sizes)
             argmin = np.argmin(cluster_sizes)
             cluster_sizes[argmax] -= 1
@@ -137,9 +151,9 @@ class GaussianRandomPartition(GraphGenerator):
         return A
 
     
-################################################################
-# --------------- Erdos-Rényi Graphs Generator --------------- #
-################################################################
+# ***************************** #
+#  Erdos-Rényi Graphs Generator #
+# ***************************** #
 class ErdosRenyi(GraphGenerator):
     def __init__(
         self,
@@ -154,7 +168,7 @@ class ErdosRenyi(GraphGenerator):
         
         Parameters
         ----------
-        d : int
+        num_nodes : int
             Number of nodes
         expected_degree : int, default is None
             Expected degree of each node.
@@ -172,9 +186,10 @@ class ErdosRenyi(GraphGenerator):
         self.p_edge = p_edge
 
 
-    def get_random_graph(self):
+    def get_random_graph(self, seed: int = None):
+        self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
-        while np.sum(A) < 2:
+        while np.sum(A) < min(2, max_edges_in_dag(self.num_nodes)):
             if self.p_edge is not None:
                 G_und = ig.Graph.Erdos_Renyi(n=self.num_nodes, p=self.p_edge)
             elif self.expected_degree is not None:
@@ -187,9 +202,9 @@ class ErdosRenyi(GraphGenerator):
         return A
     
 
-################################################################
-# --------------- Barabasi Albert Graphs Generator --------------- #
-################################################################
+# ******************************** #
+# Barabasi Albert Graphs Generator #
+# ******************************** #
 class BarabasiAlbert(GraphGenerator):
     def __init__(
         self,
@@ -217,7 +232,8 @@ class BarabasiAlbert(GraphGenerator):
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
 
-    def get_random_graph(self):
+    def get_random_graph(self, seed: int = None):
+        self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
         while np.sum(A) < 2:
             G = ig.Graph.Barabasi(n=self.num_nodes, m=self.expected_degree, directed=True)
@@ -231,10 +247,9 @@ class BarabasiAlbert(GraphGenerator):
         
 
 
-################################################################
-# -------------------- Utilities -------------------- #
-################################################################
-
+# ********************** #
+#       Utilities        #
+# ********************** #
 def acyclic_orientation(A):
     return np.triu(A, k=1)
 

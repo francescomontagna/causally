@@ -68,7 +68,7 @@ class NeuralNetMechanism(PredictionModel):
         weights_mean: float = 0.,
         weights_std: float = 1.,
         hidden_dim: int = 10,
-        activation: nn.Module = nn.Prelu()
+        activation: nn.Module = nn.PReLU()
     ):
         self.weights_mean = weights_mean
         self.weights_std = weights_std
@@ -183,6 +183,13 @@ class GaussianProcessMechanism(PredictionModel):
 
 # Base class for PostnonLinearModel invertible functions
 class InvertibleFunction(metaclass=ABCMeta):
+    """Invertible functions for the post-nonlinear model abstract class. 
+    
+    The class implementing `InvertibleFunction` must have a `forward` method
+    applying an invertible transformation to the input. 
+    If the transformation is not invertible, then the post-nonlinear model
+    is not identifiable. 
+    """
     
     @abstractmethod
     def forward(self, input: NDArray):
@@ -190,6 +197,7 @@ class InvertibleFunction(metaclass=ABCMeta):
     
     def __call__(self, input: NDArray):
         return self.forward(input)
+
 
 class Identity(InvertibleFunction):
     def forward(self, input: NDArray):

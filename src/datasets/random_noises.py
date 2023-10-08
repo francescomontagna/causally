@@ -2,7 +2,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.distributions import Normal
 from numpy.typing import NDArray
 from sklearn.gaussian_process.kernels import PairwiseKernel
 from abc import ABCMeta, abstractmethod
