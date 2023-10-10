@@ -7,7 +7,10 @@ from sklearn.gaussian_process.kernels import PairwiseKernel
 from abc import ABCMeta, abstractmethod
 
 
+
+# *** Abstract base classes *** #
 class Distribution(metaclass=ABCMeta):
+    """Base class to repreent noise distributions."""
     @abstractmethod
     def sample(self, shape : tuple[int]) -> NDArray:
         raise NotImplementedError
@@ -19,77 +22,38 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
     Samples from the random distribution are generated as nonlinear transformations
     of samples form a standard normal.
     """
-    def sample(self, shape : tuple[int]) -> NDArray:
+    def __init__(self, standardize: bool = False) -> None:
+        self.standardize = standardize
+
+    def sample(self, size : tuple[int]) -> NDArray:
+        """Sample random noise of the required input size.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Shape of the sampled noise.
+        """
         # Sample from standard normal
-        noise = np.random.normal(0, 1, shape)
+        noise = np.random.normal(0, 1, size)
 
         # Pass through the nonlinear mechanism
-        noise = self.model(noise)
+        noise = self.forward(noise)
+        if self.standardize:
+            noise = self._standardize(noise)
         return noise
+    
+    
+    def _standardize(self, noise: NDArray) -> NDArray:
+        """Remove empirical mean and set empirical variance to one."""
+        return (noise - noise.mean())/noise.std()
 
     @abstractmethod
-    def model(self, X: NDArray) -> NDArray:
+    def forward(self, X: NDArray) -> NDArray:
         raise NotImplementedError
-    
 
-class GPNoise(RandomNoiseDistribution):
-    """Sample non linear function from gaussian process.
-    """
-    def sampleGP(self, X : NDArray) -> NDArray:
-        assert X.dim() == 2, f"Number of dimensions {X.dim()} different from 2."\
-             "If input has 1 dimension, consider reshaping it with reshape(-1, 1)"
-        self.rbf = PairwiseKernel(gamma=1, metric="rbf")
-        covariance_matrix = self.rbf(X, X)
-        sample = np.random.multivariate_normal(np.zeros(len(X)), covariance_matrix)
-        return sample
-    
-    def model(self, X: NDArray) -> NDArray:
-        return self.sampleGP(X.reshape(-1, 1))
-    
-# TODO: need to allow fixing weights interval! See Elias code
-class TanHNoise(RandomNoiseDistribution):
-    """Simple 1 layer NN with tanh activation
-    """
-    def model(self, X: NDArray) -> NDArray:
-        # hidden_dimension?
-        d = X.shape[0]
-        n_hidden = 1000
-        activation = nn.Tanh() 
-        layer1 = nn.Linear(d, n_hidden)
-        layer2 = nn.Linear(n_hidden, d)
-        layer1.weight = nn.init.xavier_normal(layer1.weight)
-        layer2.weight = nn.init.xavier_normal(layer2.weight)
-        model = nn.Sequential(
-            layer1,
-            activation,
-            layer2
-        )
-        return model(torch.from_numpy(X)).numpy()
-    
 
-# TODO: need to allow fixing weights interval! See Elias code
-class EluNoise(RandomNoiseDistribution):
-    """Simple 1 layer NN with ELU activation
-    """
-    def model(self, X: NDArray) -> NDArray:
-        # hidden_dimension?
-        d = X.shape[0]
-        n_hidden = 1000
-        activation = nn.ELU() 
-        layer1 = nn.Linear(d, n_hidden)
-        layer2 = nn.Linear(n_hidden, d)
-        layer1.weight = nn.init.normal(layer1.weight)
-        layer2.weight = nn.init.normal(layer2.weight)
-        model = nn.Sequential(
-            layer1,
-            activation,
-            layer2,
-            activation
-        )
-        return model(torch.from_numpy(X)).numpy()
-    
 
-# Wrappers
+# *** Wrappers of numpy distributions *** #
 class Normal(Distribution):
     """Wrapper for np.random.Generator.normal() sampler.
     """
@@ -98,8 +62,76 @@ class Normal(Distribution):
             loc : float,
             std: float
     ):
+        super().__init__()
         self.loc = loc
         self.std = std
 
     def sample(self, shape: tuple[int]) -> NDArray:
         return np.random.normal(self.loc, self.std, shape)
+
+
+# *** Gaussian Process transformation of standard normal *** #
+class GPNoise(RandomNoiseDistribution):
+    """Sample non linear function from gaussian process.
+    """
+    def __init__(self, standardize: bool = False) -> None:
+        super().__init__(standardize)
+
+    def sampleGP(self, X : NDArray) -> NDArray:
+        if not X.ndim == 2:
+            raise ValueError(f"Number of dimensions {X.ndim} different from 2."\
+             "If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
+        self.rbf = PairwiseKernel(gamma=1, metric="rbf")
+        covariance_matrix = self.rbf(X, X)
+        sample = np.random.multivariate_normal(np.zeros(len(X)), covariance_matrix)
+        return sample
+    
+    def forward(self, X: NDArray) -> NDArray:
+        return self.sampleGP(X.reshape(-1, 1))
+
+    
+# *** MLP transformation of standard normal *** #
+class MLPNoise(RandomNoiseDistribution):
+    """Simple 1 layer NN transformation.
+    """
+    def __init__(
+        self, 
+        hidden_units=100, 
+        activation=nn.Sigmoid(), 
+        bias=False, 
+        a_weight=-3., 
+        b_weight=3., 
+        a_bias=-1., 
+        b_bias=1.,
+        standardize: bool = False
+    ) -> None:
+        super().__init__(standardize)
+        self.hidden_units = hidden_units
+        self.activation = activation
+        self.bias = bias
+        self.a_weight = a_weight
+        self.b_weight = b_weight
+        self.a_bias = a_bias
+        self.b_bias = b_bias
+
+    @torch.no_grad()
+    def forward(self, X: NDArray) -> NDArray:
+        num_features = X.shape[0]
+        torch_X = torch.from_numpy(X)
+        layer1 = self._init_params(nn.Linear(num_features, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
+        layer2 = self._init_params(nn.Linear(self.hidden_units, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
+        layer3 = self._init_params(nn.Linear(self.hidden_units, num_features, bias=self.bias, dtype=torch_X.dtype))
+        model = nn.Sequential(
+            layer1,
+            self.activation,
+            layer2,
+            self.activation,
+            layer3
+        )
+        return model(torch_X).numpy()
+    
+    def _init_params(self, layer : nn.Module) -> None:
+        nn.init.uniform_(layer.weight, a=self.a_weight, b=self.b_weight)
+        if layer.bias is not None:
+            nn.init.uniform_(layer.bias, a=self.a_bias, b=self.b_bias)
+        return layer

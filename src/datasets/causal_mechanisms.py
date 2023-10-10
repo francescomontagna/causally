@@ -43,6 +43,12 @@ class LinearMechanism(PredictionModel):
         self.min_weight = min_weight
         self.max_weight = max_weight
         self.min_abs_weight = min_abs_weight
+        
+        # One of max_weight or min_weight must be larger (abs value) than min_abs_weight
+        if not(abs(max_weight) > min_abs_weight or abs(min_weight) > min_abs_weight):
+            raise ValueError("The range of admitted weights is empty. Please set"\
+                             " one between `min_weight` and `max_weight` with absolute"\
+                             "  value larger than `min_abs_weight`.")
     
     def predict(self, X: NDArray) -> NDArray:
         n_covariates = X.shape[1]        

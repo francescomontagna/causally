@@ -1,6 +1,7 @@
 import igraph as ig
 import numpy as np
 import networkx as nx
+from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 
 from utils.data import max_edges_in_dag
@@ -15,14 +16,14 @@ class GraphGenerator(metaclass=ABCMeta):
     def get_random_graph(self):
         raise NotImplementedError()
 
-    def _manual_seed(self, seed: int):
+    def _manual_seed(self, seed: int) -> None:
         """Set manual seed for deterministic graph generation. If None, seed is not set."""
         if seed is not None:
             np.random.seed(seed)
     
 
-    def _make_random_order(self, A):
-        # Randomly permute nodes of A to avoid trivial ordering
+    def _make_random_order(self, A: NDArray) -> NDArray:
+        """Randomly permute nodes of A to avoid trivial ordering."""
         n_nodes = A.shape[0]
         order = np.random.permutation(range(n_nodes))
         A = A[order, :]
@@ -77,7 +78,7 @@ class GaussianRandomPartition(GraphGenerator):
         self.size_of_clusters = self._sample_cluster_sizes()
 
 
-    def get_random_graph(self, seed: int = None):
+    def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
 
         # print(f"size of the clusters: {size_of_clusters}")
@@ -95,7 +96,7 @@ class GaussianRandomPartition(GraphGenerator):
         return A
 
 
-    def _sample_cluster_sizes(self):
+    def _sample_cluster_sizes(self) -> NDArray:
         """Sample the size of each cluset.
 
         The size of the clusters is sampled from a multinomial distribution, 
@@ -113,14 +114,14 @@ class GaussianRandomPartition(GraphGenerator):
         return cluster_sizes
 
 
-    def _sample_er_cluster(self, cluster_size):
+    def _sample_er_cluster(self, cluster_size) -> NDArray:
         """Sample each cluster of GRP graphs with Erdos-Renyi model
         """
         A = ErdosRenyi(num_nodes=cluster_size, p_edge=self.p_in).get_random_graph()
         return A
 
 
-    def _disjoint_union(self, A, c_size):
+    def _disjoint_union(self, A: NDArray, c_size: int) -> NDArray:
         """
         Merge adjacency A with cluster of size `c_size` nodes into a DAG.
         
@@ -129,7 +130,7 @@ class GaussianRandomPartition(GraphGenerator):
 
         Parameters
         ----------
-        A : np.array
+        A : NDArray
             Current adjacency matrix
         c_size : int 
             Size of the cluster to generate
@@ -186,16 +187,18 @@ class ErdosRenyi(GraphGenerator):
         self.p_edge = p_edge
 
 
-    def get_random_graph(self, seed: int = None):
+    def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
+
+        # Ensure at least two edges (one edge if the graph is bivariate)
         while np.sum(A) < min(2, max_edges_in_dag(self.num_nodes)):
             if self.p_edge is not None:
-                G_und = ig.Graph.Erdos_Renyi(n=self.num_nodes, p=self.p_edge)
+                undirected_graph = ig.Graph.Erdos_Renyi(n=self.num_nodes, p=self.p_edge)
             elif self.expected_degree is not None:
-                G_und = ig.Graph.Erdos_Renyi(n=self.num_nodes, m=self.expected_degree*self.num_nodes)
-            A_und = ig_to_adjmat(G_und)
-            A = acyclic_orientation(A_und)
+                undirected_graph = ig.Graph.Erdos_Renyi(n=self.num_nodes, m=self.expected_degree*self.num_nodes)
+            undirected_adjacency = ig_to_adjmat(undirected_graph)
+            A = acyclic_orientation(undirected_adjacency)
 
         # Permute to avoid trivial ordering
         A = self._make_random_order(A)
@@ -232,10 +235,12 @@ class BarabasiAlbert(GraphGenerator):
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
 
-    def get_random_graph(self, seed: int = None):
+    def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
-        while np.sum(A) < 2:
+        
+        # Ensure at least two edges (one edge if the graph is bivariate)
+        while np.sum(A) < min(2, max_edges_in_dag(self.num_nodes)):
             G = ig.Graph.Barabasi(n=self.num_nodes, m=self.expected_degree, directed=True)
             A = ig_to_adjmat(G)
             if self.preferential_attachment_out:
