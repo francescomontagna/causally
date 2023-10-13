@@ -254,4 +254,3 @@ class MixedLinearNonlinearModel(PostNonlinearModel):
             return self._linear_mechanism.predict(parents) + child_noise
         else:
             return super()._sample_mechanism(parents, child_noise)
-        

@@ -10,7 +10,7 @@ from abc import ABCMeta, abstractmethod
 
 # *** Abstract base classes *** #
 class Distribution(metaclass=ABCMeta):
-    """Base class to repreent noise distributions."""
+    """Base class to represent noise distributions."""
     @abstractmethod
     def sample(self, shape : tuple[int]) -> NDArray:
         raise NotImplementedError
@@ -22,23 +22,31 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
     Samples from the random distribution are generated as nonlinear transformations
     of samples form a standard normal.
     """
-    def __init__(self, standardize: bool = False) -> None:
-        self.standardize = standardize
 
-    def sample(self, size : tuple[int]) -> NDArray:
+    def sample(self, size : tuple[int], standardize: bool = False) -> NDArray:
         """Sample random noise of the required input size.
 
         Parameters
         ----------
         size: tuple[int]
             Shape of the sampled noise.
+
+        Returns
+        -------
+        noise : NDArray of shape (num_samples, num_nodes)
+            Sample a random vector of noise terms.
+        standardize : bool, default False
+            If True, remove empirical mean and normalize deviation to one.
         """
+        if len(size) != 2:
+            ValueError(f"Expected number of input dimensions is 2, but were given {len(size)}.")
+
         # Sample from standard normal
         noise = np.random.normal(0, 1, size)
 
         # Pass through the nonlinear mechanism
-        noise = self.forward(noise)
-        if self.standardize:
+        noise = self._forward(noise)
+        if standardize:
             noise = self._standardize(noise)
         return noise
     
@@ -48,9 +56,9 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
         return (noise - noise.mean())/noise.std()
 
     @abstractmethod
-    def forward(self, X: NDArray) -> NDArray:
+    def _forward(self, X: NDArray) -> NDArray:
+        """Nonlinear transform of the input noise X."""
         raise NotImplementedError
-
 
 
 # *** Wrappers of numpy distributions *** #
@@ -66,30 +74,19 @@ class Normal(Distribution):
         self.loc = loc
         self.std = std
 
-    def sample(self, shape: tuple[int]) -> NDArray:
-        return np.random.normal(self.loc, self.std, shape)
+    def sample(self, size: tuple[int]) -> NDArray:
+        """Draw random samples from a Gaussian distribution.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Required shape of the random sample.
+        """
+        if len(size) != 2:
+            ValueError(f"Expected number of input dimensions is 2, but were given {len(size)}.")
+        return np.random.normal(self.loc, self.std, size)
 
 
-# *** Gaussian Process transformation of standard normal *** #
-class GPNoise(RandomNoiseDistribution):
-    """Sample non linear function from gaussian process.
-    """
-    def __init__(self, standardize: bool = False) -> None:
-        super().__init__(standardize)
-
-    def sampleGP(self, X : NDArray) -> NDArray:
-        if not X.ndim == 2:
-            raise ValueError(f"Number of dimensions {X.ndim} different from 2."\
-             "If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
-        self.rbf = PairwiseKernel(gamma=1, metric="rbf")
-        covariance_matrix = self.rbf(X, X)
-        sample = np.random.multivariate_normal(np.zeros(len(X)), covariance_matrix)
-        return sample
-    
-    def forward(self, X: NDArray) -> NDArray:
-        return self.sampleGP(X.reshape(-1, 1))
-
-    
 # *** MLP transformation of standard normal *** #
 class MLPNoise(RandomNoiseDistribution):
     """Simple 1 layer NN transformation.
@@ -102,10 +99,8 @@ class MLPNoise(RandomNoiseDistribution):
         a_weight=-3., 
         b_weight=3., 
         a_bias=-1., 
-        b_bias=1.,
-        standardize: bool = False
+        b_bias=1.
     ) -> None:
-        super().__init__(standardize)
         self.hidden_units = hidden_units
         self.activation = activation
         self.bias = bias
@@ -114,9 +109,13 @@ class MLPNoise(RandomNoiseDistribution):
         self.a_bias = a_bias
         self.b_bias = b_bias
 
+
     @torch.no_grad()
-    def forward(self, X: NDArray) -> NDArray:
-        num_features = X.shape[0]
+    def _forward(self, X: NDArray) -> NDArray:
+        if X.ndim != 2:
+            raise ValueError(f"Number of dimensions {X.ndim} different from 2."\
+             "If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
+        num_features = X.shape[1]
         torch_X = torch.from_numpy(X)
         layer1 = self._init_params(nn.Linear(num_features, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
         layer2 = self._init_params(nn.Linear(self.hidden_units, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
