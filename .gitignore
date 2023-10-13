@@ -1,2 +1,15 @@
+# VSCode
+**/*pycache*
+.pytest_cache
+
+# Readme files
+**/readme.txt
+
 # Virtual environment
 venv
+
+# Test scripts
+src/quick_test.py
+
+# Images
+**/*.png
