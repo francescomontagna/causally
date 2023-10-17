@@ -5,9 +5,9 @@ import numpy as np
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Callable, Tuple
+from typing import Union, Tuple
 
-from datasets.causal_mechanisms import PredictionModel, Identity, LinearMechanism
+from datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
 from datasets.random_graphs import GraphGenerator
 from datasets.random_noises import RandomNoiseDistribution
 
@@ -29,8 +29,8 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of 
         the base class RandomNoiseDistribution, or a torch Distribution.
-    seed : int
-        Seed for reproducibility
+    seed : int, default None
+        Seed for reproducibility. If None, then random seed not set.
 
     Attributes
     ----------
@@ -47,7 +47,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         num_samples : int, 
         graph_generator : GraphGenerator,
         noise_generator :  Union[RandomNoiseDistribution, Distribution],
-        seed : int
+        seed: int=None
     ):
         self._set_random_seed(seed)
 
@@ -58,13 +58,12 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
 
     def _set_random_seed(self, seed: int):
-        """Manually set the random seed.
-
-        # NOTE: I am not sure whether this is a good way.
+        """Manually set the random seed. If the seed is None, then do nothing.
         """
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        random.seed(seed)
+        if seed is not None:
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            random.seed(seed)
 
 
     def sample(self) -> Tuple[NDArray, NDArray]:
@@ -74,6 +73,8 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         Returns:
         X : NDArray
             Numpy array with the generated dataset.
+        A: NDArray
+            Numpy adjacency matrix representation of the causal graph.
         """
         X = self.noise.copy()
 
@@ -101,7 +102,7 @@ class PostNonlinearModel(BaseStructuralCausalModel):
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a `predict` method.
-    invertible_function: Callable
+    invertible_function: InvertibleFunction
         Invertible post-nonlinearity. Invertibility required for identifiability.
     """
     def __init__(
@@ -110,8 +111,8 @@ class PostNonlinearModel(BaseStructuralCausalModel):
         graph_generator: GraphGenerator,
         noise_generator: RandomNoiseDistribution | Distribution,
         causal_mechanism : PredictionModel,
-        invertible_function : Callable,
-        seed=42
+        invertible_function : InvertibleFunction,
+        seed: int=None
     ):
         super().__init__(num_samples, graph_generator, noise_generator, seed)
         
@@ -163,9 +164,9 @@ class AdditiveNoiseModel(PostNonlinearModel):
         graph_generator: GraphGenerator,
         noise_generator: RandomNoiseDistribution | Distribution,
         causal_mechanism : PredictionModel,
-        seed=42
+        seed: int=None
     ):
-        invertible_function = Identity()
+        invertible_function = lambda x: x # identity
         super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, invertible_function, seed)
         self.causal_mechanism = causal_mechanism
 
@@ -198,7 +199,7 @@ class LinearModel(AdditiveNoiseModel):
         min_weight: float = -1,
         max_weight: float = 1,
         min_abs_weight = 0.05,
-        seed = 42,
+        seed: int=None
     ):
         causal_mechanism = LinearMechanism(min_weight, max_weight, min_abs_weight)
         super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
@@ -220,7 +221,7 @@ class MixedLinearNonlinearModel(PostNonlinearModel):
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a `predict` method.
-    invertible_function: Callable
+    invertible_function: InvertibleFunction
         Invertible post-nonlinearity (not applied to the linear mechanism).
         Invertibility required for identifiability.
     linear_fraction: float, default 0.5
@@ -237,9 +238,9 @@ class MixedLinearNonlinearModel(PostNonlinearModel):
         noise_generator: RandomNoiseDistribution | Distribution,
         linear_mechanism : PredictionModel,
         nonlinear_mechanism : PredictionModel,
-        invertible_function : Callable,
+        invertible_function : InvertibleFunction,
         linear_fraction = 0.5,
-        seed=42
+        seed: int=None
     ):
         super().__init__(num_samples, graph_generator, noise_generator, nonlinear_mechanism, invertible_function, seed)
         self._linear_mechanism = linear_mechanism

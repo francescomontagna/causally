@@ -3,7 +3,7 @@
 
 # import GPy
 import numpy as np
-from typing import Tuple, Any
+from typing import Callable
 from numpy.typing import NDArray
 from torch import nn, from_numpy
 from abc import ABCMeta, abstractmethod
@@ -214,23 +214,19 @@ class GaussianProcessMechanism(PredictionModel):
 
 
 # Base class for PostnonLinearModel invertible functions
-class InvertibleFunction(metaclass=ABCMeta):
+class InvertibleFunction():
     """Invertible functions for the post-nonlinear model abstract class. 
-    
-    The class implementing `InvertibleFunction` must have a `forward` method
-    applying an invertible transformation to the input. 
-    If the transformation is not invertible, then the post-nonlinear model
-    is not identifiable. 
+
+    Parameters
+    ----------
+    function: Callable
+        Python function implementing an invertible mathematical transformation.
     """
+    def __init__(self, function: Callable) -> None:
+        self.function = function
     
-    @abstractmethod
     def forward(self, input: NDArray):
-        raise NotImplementedError("InvertibleFunction is missing the required forward method.")
+        return self.function(input)
     
     def __call__(self, input: NDArray):
         return self.forward(input)
-
-
-class Identity(InvertibleFunction):
-    def forward(self, input: NDArray):
-        return input

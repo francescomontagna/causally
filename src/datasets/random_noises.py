@@ -22,8 +22,11 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
     Samples from the random distribution are generated as nonlinear transformations
     of samples form a standard normal.
     """
+    def __init__(self, standardize: bool =False) -> None:
+        super().__init__()
+        self.standardize = standardize
 
-    def sample(self, size : tuple[int], standardize: bool = False) -> NDArray:
+    def sample(self, size : tuple[int]) -> NDArray:
         """Sample random noise of the required input size.
 
         Parameters
@@ -46,7 +49,7 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
         # Pass through the nonlinear mechanism
         noise = self._forward(noise)
-        if standardize:
+        if self.standardize:
             noise = self._standardize(noise)
         return noise
     
@@ -93,14 +96,16 @@ class MLPNoise(RandomNoiseDistribution):
     """
     def __init__(
         self, 
-        hidden_units=100, 
-        activation=nn.Sigmoid(), 
-        bias=False, 
-        a_weight=-3., 
-        b_weight=3., 
-        a_bias=-1., 
-        b_bias=1.
+        hidden_units: int=100, 
+        activation: nn.Module=nn.Sigmoid(), 
+        bias: bool=False, 
+        a_weight: float=-3., 
+        b_weight: float=3., 
+        a_bias: float=-1., 
+        b_bias: float=1.,
+        standardize: bool=False
     ) -> None:
+        super().__init__(standardize)
         self.hidden_units = hidden_units
         self.activation = activation
         self.bias = bias
