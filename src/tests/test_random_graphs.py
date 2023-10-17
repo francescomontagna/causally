@@ -97,6 +97,10 @@ def test_grp_has_expected_number_of_nodes():
 
 
 # ******************* Test ER graphs generation ******************* #
+def test_given_er_generator_when_sampling_bivariate_with_p_one_then_x_causes_y():
+    er_generator = ErdosRenyi(2, p_edge=1)
+    A = er_generator.get_random_graph()
+    assert A.sum() == 1, f"Expected number of edges 1, got instead {A.sum}"
 
 def test_er_small_sparse_number_of_edges_and_degree_regularity():
     """Test small sparse ER graphs have regular degree and expected number of edges.
@@ -180,7 +184,6 @@ def test_er_medium_sparse_number_of_edges_and_degree_regularity():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 10
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree" : [],
         "max_outcome_degree" : [],

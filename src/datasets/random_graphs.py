@@ -1,6 +1,7 @@
 import igraph as ig
 import numpy as np
 import networkx as nx
+from typing import Optional
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 
@@ -187,7 +188,18 @@ class ErdosRenyi(GraphGenerator):
         self.p_edge = p_edge
 
 
-    def get_random_graph(self, seed: int = None) -> NDArray:
+    def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
+        """Sample ER random graph.
+
+        Parameters
+        ----------
+        seed: Optional[int], default is None
+
+        Returns
+        -------
+        A: NDArray
+            Numpy adjacency matrix representing the sampled graph.
+        """
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
 

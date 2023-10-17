@@ -3,6 +3,7 @@
 
 # import GPy
 import numpy as np
+from typing import Tuple, Any
 from numpy.typing import NDArray
 from torch import nn, from_numpy
 from abc import ABCMeta, abstractmethod
@@ -17,6 +18,7 @@ class PredictionModel(metaclass=ABCMeta):
     @abstractmethod
     def predict(self, X: NDArray) -> NDArray:
         raise NotImplementedError
+
 
 
 # * Linear mechanisms *
@@ -36,9 +38,9 @@ class LinearMechanism(PredictionModel):
 
     def __init__(
         self,
-        min_weight: float,
-        max_weight: float,
-        min_abs_weight: float
+        min_weight: float=-1.,
+        max_weight: float=1.,
+        min_abs_weight: float=0.05
     ):
         self.min_weight = min_weight
         self.max_weight = max_weight
@@ -49,20 +51,39 @@ class LinearMechanism(PredictionModel):
             raise ValueError("The range of admitted weights is empty. Please set"\
                              " one between `min_weight` and `max_weight` with absolute"\
                              "  value larger than `min_abs_weight`.")
+        
+        self.linear_reg = LinearRegression(fit_intercept=False)
+        
     
     def predict(self, X: NDArray) -> NDArray:
-        n_covariates = X.shape[1]        
-        linear_reg = LinearRegression()
-        linear_reg.coef_ = np.random.uniform(self.min_weight, self.max_weight, n_covariates) 
+        """Transform X via a linear causal mechanism.
+
+        Parameters
+        ----------
+        X: NDArray of shape (num_samples, num_parents)
+            Samples of the parents to be transformed by the causal mechanism.
+
+        Returns
+        -------
+        y: NDArray
+            The output of the causal mechanism
+        """
+        if X.ndim != 2:
+            raise ValueError(f"Number of dimensions {X.ndim} different from 2."\
+             " If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
+        n_covariates = X.shape[1]      
+
+        # Random initialization of the causal mechanism
+        self.linear_reg.coef_ = np.random.uniform(self.min_weight, self.max_weight, n_covariates) 
 
         # Reject ~0 coefficients
         for i in range(n_covariates):
-            while (abs(linear_reg.coef_[i]) < self.min_abs_weight):
-                linear_reg.coef_[i] = np.random.uniform(self.min_weight, self.max_weight, 1)
+            while (abs(self.linear_reg.coef_[i]) < self.min_abs_weight):
+                self.linear_reg.coef_[i] = np.random.uniform(self.min_weight, self.max_weight, 1)
             
-        linear_reg.intercept_ = 0
-        y = linear_reg.predict(X)
-        return y
+        self.linear_reg.intercept_ = 0
+        effect = self.linear_reg.predict(X)
+        return effect    
 
 
 # * Nonlinear mechanisms *
@@ -80,6 +101,8 @@ class NeuralNetMechanism(PredictionModel):
         self.weights_std = weights_std
         self.hidden_dim = hidden_dim
         self.activation = activation
+
+        self._model = None
 
 
     def predict(
@@ -105,34 +128,37 @@ class NeuralNetMechanism(PredictionModel):
         n_causes = X.shape[1]
 
         # Make architecture
-        layers = []
-
-        layers.append(nn.modules.Linear(n_causes, self.hidden_dim))
-        layers.append(self.activation)
-        layers.append(nn.LayerNorm(self.hidden_dim)) # Avoid magnitude increase in causal direction
-        layers.append(nn.modules.Linear(self.hidden_dim, 1))
-
-        layers = nn.Sequential(*layers)
-        layers.apply(self._weight_init)
+        self._model = nn.Sequential(
+            nn.Linear(n_causes, self.hidden_dim),
+            self.activation,
+            nn.LayerNorm(self.hidden_dim),
+            nn.Linear(self.hidden_dim, 1)
+        )
+        self._model.apply(self._weight_init)
 
         # Convert to torch.Tensor for forward pass
         data = X.astype('float32')
         data = from_numpy(data)
 
         # Forward pass
-        effect = np.reshape(layers(data).data, (n_samples,))
+        effect = np.reshape(self.model(data).data, (n_samples,))
 
         return effect.numpy()
     
 
-    def _weight_init(self, model):
+    def _weight_init(self, module):
         """Random initialization of model weights.
         """
-        if isinstance(model, nn.modules.Linear):
+        if isinstance(module, nn.Linear):
             nn.init.normal_(
-                model.weight.data, mean=self.weights_mean, std=self.weights_std
+                module.weight.data, mean=self.weights_mean, std=self.weights_std
             )
 
+    @property
+    def model(self):
+        if self._model is None:
+            raise ValueError("Torch model not initialized. Call `self.predict()` first")
+        return self._model
 
 
 class GaussianProcessMechanism(PredictionModel):
@@ -183,7 +209,7 @@ class GaussianProcessMechanism(PredictionModel):
         covariance_matrix = self.rbf(X, X)
 
         # Sample the effect as a zero centered normal with covariance given by the RBF kernel
-        effect = np.random.multivariate_normal(np.zeros(num_samples),covariance_matrix)
+        effect = np.random.multivariate_normal(np.zeros(num_samples), covariance_matrix)
         return effect
 
 

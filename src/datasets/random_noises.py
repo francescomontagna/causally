@@ -67,8 +67,8 @@ class Normal(Distribution):
     """
     def __init__(
             self,
-            loc : float,
-            std: float
+            loc : float=0.,
+            std: float=1.
     ):
         super().__init__()
         self.loc = loc
@@ -114,7 +114,7 @@ class MLPNoise(RandomNoiseDistribution):
     def _forward(self, X: NDArray) -> NDArray:
         if X.ndim != 2:
             raise ValueError(f"Number of dimensions {X.ndim} different from 2."\
-             "If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
+             " If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
         num_features = X.shape[1]
         torch_X = torch.from_numpy(X)
         layer1 = self._init_params(nn.Linear(num_features, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
