@@ -20,8 +20,8 @@ def test_given_mlp_noise_sample_when_checking_shape_then_has_two_dimensions():
     assert sample.shape == (1000, 1), f"Sample shape is {sample.shape}, expected (1000, 1) instead"
 
 def test_given_mlp_noise_sample_when_standardized_is_true_then_mean_zero_and_std_one():
-    mlp_sampler = MLPNoise(hidden_units=100)
-    sample = mlp_sampler.sample((1000, 1), standardize=True)
+    mlp_sampler = MLPNoise(hidden_units=100, standardize=True)
+    sample = mlp_sampler.sample((1000, 1))
     assert np.allclose(sample.mean(), 0, atol=0.05),\
         f"Empirical mean is {sample.mean()}, expected closer to 0."
     assert np.allclose(sample.std(), 1, atol=0.05),\

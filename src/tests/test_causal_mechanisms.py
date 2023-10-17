@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from datasets.causal_mechanisms import LinearMechanism, NeuralNetMechanism, GaussianProcessMechanism, Identity
+from datasets.causal_mechanisms import LinearMechanism, NeuralNetMechanism
 
 # Random seeds for reproducibility
 SEED=42
