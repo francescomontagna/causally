@@ -13,3 +13,10 @@ src/quick_test.py
 
 # Images
 **/*.png
+
+# Data generation arguments
+**/*.json
+
+# Setup
+.eggs
+**/*egg-info
