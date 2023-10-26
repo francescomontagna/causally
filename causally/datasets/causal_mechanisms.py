@@ -164,8 +164,6 @@ class NeuralNetMechanism(PredictionModel):
 class GaussianProcessMechanism(PredictionModel):
     def __init__(
         self,
-        # lengthscale: float,
-        # variance: float
         gamma: float = 1.
     ):
         """Nonlinear causal mechanism sampled from a gaussian process.
@@ -175,14 +173,7 @@ class GaussianProcessMechanism(PredictionModel):
         gamma : float
             The gamma parameters fixing the variance of the kernel. 
             Larger values of gamma determines bigger magnitude of the causal mechanisms.
-        # lengthscale: float
-        #     The lengthscale of the RBF kernel.
-        # variance: float
-        #     The variance of the rbf kernel. This determines the magnitude of the
-        #     causal mechanism outputs (the larger the variacne the larger the output)
         """
-        # self.lengthscale = lengthscale
-        # self.variance = variance
         self.rbf = PairwiseKernel(gamma=gamma, metric="rbf")
 
 

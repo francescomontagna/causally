@@ -21,19 +21,14 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 # See https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#setup-py
 # for arguments reference
 # See https://godatadriven.com/blog/a-practical-guide-to-using-setup-py/ for a quick, useful, guide
-
 setup(
-    name="causally",  # Required
-    version="0.1.0",  # Required
-    description="Semi-sytnthetic generation of causl discovery data in realistic scenarios",  # Optional
-    long_description=long_description,  # Optional
-    long_description_content_type="text/markdown",
-    url="https://github.com/francescomontagna/causally",
+    name="causally",
+    version="0.1.0",
     author="Francesco Montagna",  # Optional
     author_email="francesco.montagna997@gmail.com",  # Optional
-    package_dir={"": "src"},  # Optional
-    packages=find_packages(where="src", exclude="*.py"),  # Required
-    python_requires=">=3.9",
+    url="https://github.com/francescomontagna/causally",
+    description="Generator of causal discovery data under realistic assumptions.",
+    python_requires=">=3.8",
     install_requires=[
         "numpy>=1.25.2",
         "networkx>=3.1",
@@ -41,5 +36,7 @@ setup(
         "torch>=2.0.1"
     ], # Optional
     setup_requires=['pytest-runner', 'flake8'],
-    tests_require=['pytest']
+    tests_require=['pytest'],
+    packages=find_packages(),
+    include_package_data=True,
 )
