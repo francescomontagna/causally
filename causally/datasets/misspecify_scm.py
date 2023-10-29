@@ -1,0 +1,279 @@
+import random
+import numpy as np
+import networkx as nx
+
+from numpy.typing import NDArray
+from typing import Union, Tuple, List
+
+
+# * Latent Confouders Utilities *
+class ConfoundedModel:
+    def __init__(self, p_confounder: float = 0.2):
+        """Utility functions for SCM generation under confounding effects.
+
+        Parameters
+        ----------
+        p_confounder: float, default 0.2
+            The probability of adding a latent common cause between a pair of nodes,
+            sampled as a Bernoulli random variable.
+        """
+        self.p_confounder = p_confounder
+
+    def confound_adjacency(self, adjacency: NDArray):
+        """Add latent common causes to the input adjacency matrix.
+
+        Parameters
+        ----------
+        adjacency: NDArray of shape (num_nodes x num_nodes)
+            The adjacency matrix without latent confounders.
+
+        Returns
+        -------
+        confounded_adj: NDArray of shape (2*num_nodes, 2*num_nodes)
+            The adjacency matrix with additional latent confounders.
+        """
+        num_nodes, _ = adjacency.shape
+
+
+        # Generate the matrix of the latent confounders
+        confounders_matrix = np.zeros((num_nodes, num_nodes))
+        
+        # Add confounding effects
+        for i in range(num_nodes):
+            for j in range(i+1, num_nodes):
+                # Add confounder with probability self.p_confounder.
+                confounded = np.random.binomial(n=1, p=self.p_confounder) == 1
+                if confounded:
+                    # Sample the confounder node from confounders_matrix nodes
+                    confounder_node = random.choice(range(num_nodes))
+                    confounders_matrix[confounder_node, i] = 1
+                    confounders_matrix[confounder_node, j] = 1
+        
+        # Make confounders_matrix source nodes of the input adjacency.
+        confounded_adj = np.vstack((confounders_matrix, adjacency))
+        confounded_adj = np.hstack((np.zeros(confounded_adj.shape), confounded_adj))
+        
+        # TODO: test if A_confounded is uppertriangular. 
+
+        return confounded_adj
+    
+
+    def confound_dataset(self, X: NDArray, n_confounders: int):
+        """Remove latent confounders observations from the input dataset.
+
+        Parameters
+        ----------
+        X: NDArray of shape (num_samples, 2*num_nodes)
+            The dataset with latent confoudners observations. The columns
+            corresponding to confounders' observations are the first 'n_confounders'.
+        n_confounders: int
+            The number of latent confounders.
+
+        Returns
+        -------
+        X: NDArray of shape (num_samples, num_nodes)
+            The dataset without latent confounders' observations' columns.
+        """
+        return X[:, n_confounders:]
+
+
+# * Measurement Error Utilities *
+class MeasurementErrorModel:
+    def __init__(self, gamma:Union[float, List[float]]) -> None:
+        """Utility functions for SCM generation with measurement error.
+
+        Parameters
+        ----------
+        gamma: Union[float, List[float]] 
+            The inverse signal to noise ratio Var(error)/Var(signal) parametrizing
+            the variance of the measurement error proportionally to the variance of
+            the signal. If a single float is provided, then gamma is the same for each
+            column of the data matrix. Else, gamma is a vector of shape (num_nodes, ).
+        """
+        if not gamma > 0 and gamma <= 1:
+            raise ValueError("Signal to noise ratio outside of  (0, 1] interval")
+        self.gamma = gamma
+
+
+    def add_measure_error(self, X: NDArray):
+        """Add measurement error to the input dataset X.
+
+        X: NDArray of shape (num_samples, num_nodes)
+            The input dataset without measurement errors
+        
+        Returns
+        -------
+        X: NDArray of shape (num_samples, num_nodes)
+            The input dataset with measurement error sampled from a zero
+            centered gaussian with variance Var(error) = gamma*Var(signal).
+        """
+        n_samples, n_nodes = X.shape
+        if not isinstance(self.gamma, list):
+            gamma = [self.gamma for _ in n_nodes]
+        else:
+            gamma = self.gamma
+            
+        X_std = np.std(X, axis=0)
+        for node in range(n_nodes):
+            error_std = np.sqrt(gamma)*X_std[node]
+            error_sample = error_std*np.random.standard_normal((n_samples, ))
+            X[:, node] += error_sample
+        return X
+    
+
+
+# * Path Canceling Utilities *
+class UnfaithfulModel:
+    def __init__(self, p_unfaithful: float) -> None:
+        """Utility functions for SCM generation with measurement error.
+
+        Class modelling unfaithful data cancelling in fully connected triplets
+        X -> Y <- Z -> X. 
+        """
+        self.p_unfaithful = p_unfaithful
+
+
+    def make_unfaithful_dataset(
+        self,
+        X: NDArray,
+        noise: NDArray,
+        faithful_adj: NDArray,
+        unfaithful_adj: NDArray,
+        unfaithful_triplets_toporder: List[List[int]]
+    ):
+        """Find cancelled edges and modify X according to the unfathful SCM.
+
+        Unfaithful edge cancellations are found by comparing faithful_adj and
+        unfaithful_adj matrices. Then, X is post-processed to be distributed 
+        faitfhully with respect to the unfaithful_adj adjacency matrix.
+        
+        Parameters
+        ----------
+        X : NDArray of shape (num_samples, num_nodes)
+            The input matrix of the data without path cancelling.
+        noise: NDArray: of shape (num_samples, num_nodes)
+            Matrix of the SCM additive noise terms.
+        faithful_adj: NDArray
+            Groundtruth adjacency matrix faithful to X's distribution.
+        unfaithful_adj: NDArray
+            Adjacency matrix unfaithful with respect to X's distribution,
+            with independencies that are not in faithful_adj groundtruth.
+        unfaithful_triplets_toporder : List[List[int]]
+            Represent moralized colliders by their topological order.
+            E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet.
+            To model unfaithfulness, add X_noise[:, 2] to X[0:, ]
+
+        Returns
+        -------
+        X: NDArray
+            Matrix of the data with distribution faithful to unfaithful_adj matrix.
+        """
+        edges_removed = np.transpose(np.nonzero(unfaithful_adj - faithful_adj))
+        added_noise = dict()
+        for ordered_triplet in unfaithful_triplets_toporder:
+            p1, p2, child = ordered_triplet
+            child_added_noise = added_noise.get(child, list())
+            if p2 not in child_added_noise:
+                X[:, child] += noise[:, p2]
+                child_added_noise.append(p2)
+                added_noise[child] = child_added_noise
+            assert np.array([p1, child]) in edges_removed
+
+        return X
+
+
+    def make_unfaithful_adj(self, adjacency):
+        """Make a copy of the input adjacency cancelling unfaithful edges.
+
+        Parameters
+        ----------
+        adjacency: NDArray of shape (num_nodes, num_nodes)
+            The input adjacency matrix faithful to the data distribution.
+
+        Return
+        ------
+        unfaithful_adj : np.array
+            Transformed groundtruth adjacency matrix unfaithful to the data distribution.
+            unfaithful to the graph
+        unfaithful_triplets_toporder : List[tuple(int)]
+            Represent moralized colliders by their topological order.
+            E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet
+        """
+
+        moral_colliders_toporder = self._find_moral_colliders(adjacency)
+        unfaithful_adj = adjacency.copy()
+        unfaithful_triplets_toporder = list()
+
+        # For each child, if (p1, p2, c) lead to unfaithful deletion of p1 -> c
+        # then I can not reuse p2 in position 1 for future unfaithful deletions
+        fixed_edges = list()
+
+        for triplet in moral_colliders_toporder:
+            p1, p2, child = triplet
+            # Check if triplet still has collider in unfaithful_adj
+            if self._is_a_collider(unfaithful_adj, p1, p2, child) and not((p1, child) in fixed_edges):
+                if np.random.binomial(n=1, p=self.p_unfaithful):
+                    unfaithful_adj[p1, child] = 0 # remove p1 -> c
+                    # Remove all others directed paths from the groundtruth and adj graph
+                    unfaithful_triplets_toporder.append(triplet)
+                    if (p2, child) not in fixed_edges:
+                        fixed_edges.append((p2, child))
+
+        # TODO: test if unfaithful_adj is acyclic
+
+        return unfaithful_adj, unfaithful_triplets_toporder
+
+
+    def _is_a_collider(self, A: NDArray, p1: int, p2: int, c: int):
+        """
+        Paramaters
+        ----------
+        A : NDArray
+            Adj. matrix with potential collider
+        p1 : int
+            First parent of the potential collider
+        p2 : int
+            Second parent of the potential collider
+        c : int
+            Head of the potential collider
+        """
+        # Check p1 -> c and p2 --> c
+        collider_struct = A[p1, c] == 1 and A[p2, c] == 1
+        return collider_struct
+    
+
+    def _find_moral_colliders(self, adjacency):
+        """Find moral v-structures in the input adjacency matrix.
+
+        Parameters
+        ----------
+        adjacency: NDArray of shape (num_nodes, num_nodes)
+            The input adjacency matrix faithful to the data distribution.
+
+        Return
+        ------
+        moral_colliders_toporder : List[List[int]]
+            Represent moralized colliders by their topological order.
+            E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet
+        """
+        # Represent moralized colliders by their topological order.
+        moral_colliders_toporder = list()
+
+        # Find moral v-structures
+        for child in range(self.num_nodes):
+            parents = np.flatnonzero(adjacency[:, child])
+            n_parents = len(parents)
+            # Check if child is the tip of v-structures
+            if n_parents > 1:
+                for i in range(n_parents):
+                    for j in range(i+1, n_parents):
+                        p_i, p_j = parents[i], parents[j]
+                        # Check if collider is moral, and store the triplet's topological order
+                        is_moralized = adjacency[p_i, p_j] + adjacency[p_j, p_i] == 1
+                        if is_moralized:
+                            moral_collider = [p_i, p_j]
+                            if adjacency[p_j, p_i] == 1:
+                                moral_collider = [p_j, p_i]
+                            moral_collider.append(child)
+                            moral_colliders_toporder.append(moral_collider)
+        return moral_colliders_toporder
