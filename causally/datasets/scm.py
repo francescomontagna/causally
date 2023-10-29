@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 from datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
 from datasets.random_graphs import GraphGenerator
@@ -66,22 +66,57 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             random.seed(seed)
 
 
-    def sample(self) -> Tuple[NDArray, NDArray]:
+    def sample(self, violations: List[str]) -> Tuple[NDArray, NDArray]:
         """
         Sample a dataset of observations.
 
-        Returns:
+        Parameters
+        ----------
+        violations: List[str]
+            The list of violations to be modeled. Elements in the list are chosen from
+            {'confounded', 'unfaithful', 'timino', 'measurement error'}, the order of
+            the list doesn't matter.
+
+        Returns
+        -------
         X : NDArray
             Numpy array with the generated dataset.
         A: NDArray
             Numpy adjacency matrix representation of the causal graph.
         """
+        # TODO: need to handle parameters of the violations!
         X = self.noise.copy()
+        adjacency = self.adjacency.copy()
+
+        # [VIOLATION] Add confounders to the ground truth
+        if "confounded" in violations:
+            adjacency = confound_adjacency(adjacency)
+
+        # Make an unfaithful copy of the ground truth
+        if "unfaithful" in violations:
+            adjacency, unfaithful_triplets_order = unfaithful_adjacency(adjacency)
 
         for i in range(self.num_nodes):
-            parents = np.nonzero(self.adjacency[:,i])[0]
-            if len(np.nonzero(self.adjacency[:,i])[0]) > 0:                
+            parents = np.nonzero(adjacency[:,i])[0]
+            if len(np.nonzero(adjacency[:,i])[0]) > 0:                
                 X[:, i] = self._sample_mechanism(X[:,parents], self.noise[:, i])
+
+                # NOTE: I think the paper code might be wrong here...
+                if "measurement_error" in violations:
+                    X[:, i] = add_measure_error(X[:, i])
+
+                if "timino" in violations:
+                    X[:, i] = add_time_effect(X[:, i])
+
+
+        # Delete confounders from X, i.e. drop first d columns
+        if "confounded" in violations:
+            d, _ = self.adjacency.shape
+            X = X[:, d:]
+
+        # Path cancelling in the dataset
+        if "unfaithful" in violations:
+            self.path_cancelling(X, self.noise, unfaithful_triplets_order)
 
         return X, self.adjacency
     
