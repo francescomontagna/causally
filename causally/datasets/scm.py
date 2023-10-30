@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 from datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
 from datasets.random_graphs import GraphGenerator
@@ -100,6 +100,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         A: NDArray
             Numpy adjacency matrix representation of the causal graph.
         """
+        # TODO: need to handle parameters of the violations!
         X = self.noise.copy()
         adjacency = self.adjacency.copy()
 
