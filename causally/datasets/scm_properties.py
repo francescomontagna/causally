@@ -1,13 +1,21 @@
 import random
 import numpy as np
-import networkx as nx
 
+from abc import ABCMeta, abstractmethod
 from numpy.typing import NDArray
-from typing import Union, Tuple, List
+from typing import Union, List
+
+# TODO: fix identifier, it is not correct.
+
+# * Base property class. Just for type hinting *
+class SCMProperty(metaclass=ABCMeta):
+    @ abstractmethod
+    def identifier(self):
+        raise NotImplementedError
 
 
 # * Latent Confouders Utilities *
-class ConfoundedModel:
+class ConfoundedModel(SCMProperty):
     def __init__(self, p_confounder: float = 0.2):
         """Utility functions for SCM generation under confounding effects.
 
@@ -18,6 +26,11 @@ class ConfoundedModel:
             sampled as a Bernoulli random variable.
         """
         self.p_confounder = p_confounder
+
+
+    def identifier(self):
+        return "confounded"
+
 
     def confound_adjacency(self, adjacency: NDArray):
         """Add latent common causes to the input adjacency matrix.
@@ -53,7 +66,7 @@ class ConfoundedModel:
         confounded_adj = np.vstack((confounders_matrix, adjacency))
         confounded_adj = np.hstack((np.zeros(confounded_adj.shape), confounded_adj))
         
-        # TODO: test if A_confounded is uppertriangular. 
+        # TODO: test if confounded_adj is uppertriangular. 
 
         return confounded_adj
     
@@ -74,11 +87,11 @@ class ConfoundedModel:
         X: NDArray of shape (num_samples, num_nodes)
             The dataset without latent confounders' observations' columns.
         """
-        return X[:, n_confounders:]
+        X = X[:, n_confounders:]
 
 
 # * Measurement Error Utilities *
-class MeasurementErrorModel:
+class MeasurementErrorModel(SCMProperty):
     def __init__(self, gamma:Union[float, List[float]]) -> None:
         """Utility functions for SCM generation with measurement error.
 
@@ -93,6 +106,10 @@ class MeasurementErrorModel:
         if not gamma > 0 and gamma <= 1:
             raise ValueError("Signal to noise ratio outside of  (0, 1] interval")
         self.gamma = gamma
+
+
+    def identifier(self):
+        self.identifier = "measurement error"
 
 
     def add_measure_error(self, X: NDArray):
@@ -118,12 +135,11 @@ class MeasurementErrorModel:
             error_std = np.sqrt(gamma)*X_std[node]
             error_sample = error_std*np.random.standard_normal((n_samples, ))
             X[:, node] += error_sample
-        return X
     
 
 
 # * Path Canceling Utilities *
-class UnfaithfulModel:
+class UnfaithfulModel(SCMProperty):
     def __init__(self, p_unfaithful: float) -> None:
         """Utility functions for SCM generation with measurement error.
 
@@ -133,12 +149,14 @@ class UnfaithfulModel:
         self.p_unfaithful = p_unfaithful
 
 
-    def make_unfaithful_dataset(
+    def identifier(self):
+        self.identifier = "unfaithful"
+
+
+    def unfaithful_dataset(
         self,
         X: NDArray,
         noise: NDArray,
-        faithful_adj: NDArray,
-        unfaithful_adj: NDArray,
         unfaithful_triplets_toporder: List[List[int]]
     ):
         """Find cancelled edges and modify X according to the unfathful SCM.
@@ -153,22 +171,12 @@ class UnfaithfulModel:
             The input matrix of the data without path cancelling.
         noise: NDArray: of shape (num_samples, num_nodes)
             Matrix of the SCM additive noise terms.
-        faithful_adj: NDArray
-            Groundtruth adjacency matrix faithful to X's distribution.
-        unfaithful_adj: NDArray
-            Adjacency matrix unfaithful with respect to X's distribution,
-            with independencies that are not in faithful_adj groundtruth.
         unfaithful_triplets_toporder : List[List[int]]
             Represent moralized colliders by their topological order.
             E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet.
             To model unfaithfulness, add X_noise[:, 2] to X[0:, ]
-
-        Returns
-        -------
-        X: NDArray
-            Matrix of the data with distribution faithful to unfaithful_adj matrix.
         """
-        edges_removed = np.transpose(np.nonzero(unfaithful_adj - faithful_adj))
+        # edges_removed = np.transpose(np.nonzero(unfaithful_adj - faithful_adj))
         added_noise = dict()
         for ordered_triplet in unfaithful_triplets_toporder:
             p1, p2, child = ordered_triplet
@@ -177,12 +185,12 @@ class UnfaithfulModel:
                 X[:, child] += noise[:, p2]
                 child_added_noise.append(p2)
                 added_noise[child] = child_added_noise
-            assert np.array([p1, child]) in edges_removed
+            
+            # TODO: unit test
+            # assert np.array([p1, child]) in edges_removed
 
-        return X
 
-
-    def make_unfaithful_adj(self, adjacency):
+    def unfaithful_adjacency(self, adjacency):
         """Make a copy of the input adjacency cancelling unfaithful edges.
 
         Parameters
