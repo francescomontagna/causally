@@ -101,7 +101,6 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         A: NDArray
             Numpy adjacency matrix representation of the causal graph.
         """
-        # TODO: need to handle parameters of the violations!
         adjacency = self.adjacency.copy()
 
         # Pre-process: graph misspecification
