@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import warnings
 
 from abc import ABCMeta, abstractmethod
 from numpy.typing import NDArray
@@ -8,9 +9,8 @@ from typing import Union, List
 
 # * Base property class. Just for type hinting *
 class SCMProperty(metaclass=ABCMeta):
-    @ abstractmethod
-    def identifier(self):
-        raise NotImplementedError
+    def __init__(self, identifier: str) -> None:
+        self.identifier = identifier
 
 
 # * Latent Confouders Utilities *
@@ -24,11 +24,8 @@ class ConfoundedModel(SCMProperty):
             The probability of adding a latent common cause between a pair of nodes,
             sampled as a Bernoulli random variable.
         """
+        super().__init__(identifier="confounded")
         self.p_confounder = p_confounder
-
-
-    def identifier(self):
-        return "confounded"
 
 
     def confound_adjacency(self, adjacency: NDArray):
@@ -102,13 +99,10 @@ class MeasurementErrorModel(SCMProperty):
             the signal. If a single float is provided, then gamma is the same for each
             column of the data matrix. Else, gamma is a vector of shape (num_nodes, ).
         """
+        super().__init__(identifier="measurement error")
         if not gamma > 0 and gamma <= 1:
             raise ValueError("Signal to noise ratio outside of  (0, 1] interval")
         self.gamma = gamma
-
-
-    def identifier(self):
-        self.identifier = "measurement error"
 
 
     def add_measure_error(self, X: NDArray):
@@ -125,13 +119,13 @@ class MeasurementErrorModel(SCMProperty):
         """
         n_samples, n_nodes = X.shape
         if not isinstance(self.gamma, list):
-            gamma = [self.gamma for _ in n_nodes]
+            gamma = [self.gamma for _ in range(n_nodes)]
         else:
             gamma = self.gamma
             
         X_std = np.std(X, axis=0)
         for node in range(n_nodes):
-            error_std = np.sqrt(gamma)*X_std[node]
+            error_std = np.sqrt(gamma[node])*X_std[node]
             error_sample = error_std*np.random.standard_normal((n_samples, ))
             X[:, node] += error_sample
     
@@ -145,11 +139,8 @@ class UnfaithfulModel(SCMProperty):
         Class modelling unfaithful data cancelling in fully connected triplets
         X -> Y <- Z -> X. 
         """
+        super().__init__(identifier="unfaithful")
         self.p_unfaithful = p_unfaithful
-
-
-    def identifier(self):
-        self.identifier = "unfaithful"
 
 
     def unfaithful_dataset(
@@ -267,7 +258,8 @@ class UnfaithfulModel(SCMProperty):
         moral_colliders_toporder = list()
 
         # Find moral v-structures
-        for child in range(self.num_nodes):
+        num_nodes = len(adjacency)
+        for child in range(num_nodes):
             parents = np.flatnonzero(adjacency[:, child])
             n_parents = len(parents)
             # Check if child is the tip of v-structures
@@ -288,7 +280,7 @@ class UnfaithfulModel(SCMProperty):
 
 
 # * Time effects utilities * 
-class AutoregressieModel(SCMProperty):
+class AutoregressiveModel(SCMProperty):
     def __init__(self, order: int) -> None:
         """Utility functions for SCM generation with time lags effects.
 
@@ -303,12 +295,18 @@ class AutoregressieModel(SCMProperty):
         order: int
             The number of time lags
         """
-        super().__init__()
+        super().__init__(identifier="autoregressive")
         self.order = order
 
+
     def add_time_lag(self, X: NDArray):
+        if len(X) <= self.order:
+            warnings.warn("The autoregressive order is larger or equal than the number"\
+                            " of samples of X. This would cause an IndexError. Reducing"\
+                            f" self.order to len(X) - 1 = {len(X) - 1}")
+            self.order = len(X) - 1
         linear_coeffs = np.random.uniform(-1, 1, (self.order, ))
         for t in range(self.order, len(X)):
             for k in range(self.order):
-                X[t] += linear_coeffs[t]*X[t-k]
+                X[t] += linear_coeffs[k]*X[t-k]
         return X

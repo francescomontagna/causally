@@ -59,7 +59,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         self.num_samples = num_samples
         self.adjacency = graph_generator.get_random_graph()
-        self.noise = noise_generator.sample((self.num_samples, graph_generator.num_nodes))
+        self.noise_generator = noise_generator
         self.misspecifications = dict()
 
 
@@ -102,7 +102,6 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             Numpy adjacency matrix representation of the causal graph.
         """
         # TODO: need to handle parameters of the violations!
-        X = self.noise.copy()
         adjacency = self.adjacency.copy()
 
         # Pre-process: graph misspecification
@@ -112,11 +111,15 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         if "unfaithful" in list(self.misspecifications.keys()):
             adjacency, unfaithful_triplets_order = self.misspecifications["unfaithful"].unfaithful_adjacency(adjacency)
 
+        # Sample the noise
+        noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
+        X = noise.copy()
+
         # Generate the data starting from source nodes
         for i in topological_order(adjacency):
             parents = np.nonzero(adjacency[:,i])[0]
             if len(np.nonzero(adjacency[:,i])[0]) > 0:    
-                X[:, i] = self._sample_mechanism(X[:,parents], self.noise[:, i])
+                X[:, i] = self._sample_mechanism(X[:,parents], noise[:, i])
 
                 # Autoregressive effect          
                 if "autoregressive" in list(self.misspecifications.keys()):
@@ -131,7 +134,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             self.misspecifications["confounded"].confound_dataset(X, n_confounders=d)
         if "unfaithful" in list(self.misspecifications.keys()):
             self.misspecifications["unfaithful"].unfaithful_dataset(
-                X, self.noise, unfaithful_triplets_order
+                X, noise, unfaithful_triplets_order
             )
 
         return X, self.adjacency
