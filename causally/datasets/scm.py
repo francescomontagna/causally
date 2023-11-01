@@ -169,7 +169,8 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
         self.causal_mechanism = causal_mechanism
 
     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-        return super()._sample_mechanism(parents, child_noise)
+        effect = self.causal_mechanism.predict(parents) + child_noise
+        return effect
 
 
 
