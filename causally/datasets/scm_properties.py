@@ -5,7 +5,6 @@ from abc import ABCMeta, abstractmethod
 from numpy.typing import NDArray
 from typing import Union, List
 
-# TODO: fix identifier, it is not correct.
 
 # * Base property class. Just for type hinting *
 class SCMProperty(metaclass=ABCMeta):
@@ -285,3 +284,31 @@ class UnfaithfulModel(SCMProperty):
                             moral_collider.append(child)
                             moral_colliders_toporder.append(moral_collider)
         return moral_colliders_toporder
+
+
+
+# * Time effects utilities * 
+class AutoregressieModel(SCMProperty):
+    def __init__(self, order: int) -> None:
+        """Utility functions for SCM generation with time lags effects.
+
+        Structural equations take the autoregressive form
+        X_i(t):= f(parents_i(t)) + N_i + sum_{k=t-order} alpha(k)*X_i(k)
+        where N_i is the noise term of the structural equation, alpha(k)
+        is a coefficient uniformly sampled between -1 and 1, t is the
+        sample step index, interpreted as the time step.
+
+        Parameters
+        ----------
+        order: int
+            The number of time lags
+        """
+        super().__init__()
+        self.order = order
+
+    def add_time_lag(self, X: NDArray):
+        linear_coeffs = np.random.uniform(-1, 1, (self.order, ))
+        for t in range(self.order, len(X)):
+            for k in range(self.order):
+                X[t] += linear_coeffs[t]*X[t-k]
+        return X

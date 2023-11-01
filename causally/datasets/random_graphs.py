@@ -22,13 +22,12 @@ class GraphGenerator(metaclass=ABCMeta):
         if seed is not None:
             np.random.seed(seed)
     
-
     def _make_random_order(self, A: NDArray) -> NDArray:
         """Randomly permute nodes of A to avoid trivial ordering."""
         n_nodes = A.shape[0]
-        order = np.random.permutation(range(n_nodes))
-        A = A[order, :]
-        A = A[:, order]
+        permutation = np.random.permutation(range(n_nodes))
+        A = A[permutation, :]
+        A = A[:, permutation]
         return A
 
 

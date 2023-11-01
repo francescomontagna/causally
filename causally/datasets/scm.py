@@ -11,6 +11,7 @@ from datasets.causal_mechanisms import PredictionModel, LinearMechanism, Inverti
 from datasets.random_graphs import GraphGenerator
 from datasets.random_noises import RandomNoiseDistribution
 from datasets.scm_properties import SCMProperty
+from utils.data import topological_order
 
 # * Base SCM abstract class *
 class BaseStructuralCausalModel(metaclass=ABCMeta):
@@ -90,7 +91,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         ----------
         violations: List[str]
             The list of violations to be modeled. Elements in the list are chosen from
-            {'confounded', 'unfaithful', 'timino', 'measurement error'}, the order of
+            {'confounded', 'unfaithful', 'autoregressive', 'measurement error'}, the order of
             the list doesn't matter.
 
         Returns
@@ -104,25 +105,25 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         X = self.noise.copy()
         adjacency = self.adjacency.copy()
 
-        # Misspecify the causal graphs
+        # Pre-process: graph misspecification
         # TODO: very bad, Python compiler does not know self.misspecifications["confounded"] is ConfoundedModel instance
         if "confounded" in list(self.misspecifications.keys()):
             adjacency = self.misspecifications["confounded"].confound_adjacency(adjacency)
         if "unfaithful" in list(self.misspecifications.keys()):
             adjacency, unfaithful_triplets_order = self.misspecifications["unfaithful"].unfaithful_adjacency(adjacency)
 
-        # Generate the data
-        num_nodes = len(adjacency)
-        for i in range(num_nodes):
+        # Generate the data starting from source nodes
+        for i in topological_order(adjacency):
             parents = np.nonzero(adjacency[:,i])[0]
-            if len(np.nonzero(adjacency[:,i])[0]) > 0:                
+            if len(np.nonzero(adjacency[:,i])[0]) > 0:    
                 X[:, i] = self._sample_mechanism(X[:,parents], self.noise[:, i])
 
-                if "timino" in list(self.misspecifications.keys()):
-                    X[:, i] = add_time_effect(X[:, i])
+                # Autoregressive effect          
+                if "autoregressive" in list(self.misspecifications.keys()):
+                    X[:, i] = self.misspecifications["autoregressive"].add_time_lag(X[:, i])
 
 
-        # Misspecify the dataset
+        # Post-process: data misspecification
         if "measurement error" in  list(self.misspecifications.keys()):
             self.misspecifications["measurement error"].add_measure_error(X)
         if "confounded" in list(self.misspecifications.keys()):
@@ -202,6 +203,8 @@ class PostNonlinearModel(AdditiveNoiseModel):
     def add_misspecificed_property(self, property: SCMProperty):
         if property.identifier == "unfaithful":
             raise ValueError("The PostNonlinear model does not support faithfulness violation.")
+        elif property.identifier == "autoregressive":
+            raise ValueError("The PostNonlinear model does not support autoregressive effects violation.")
         else:
             super().add_misspecificed_property(property)
 
