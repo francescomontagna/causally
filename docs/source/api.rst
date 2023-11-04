@@ -1,18 +1,10 @@
-.. _api_ref:
-
-###
 API
-###
+===
 
-:py:mod:`causally`:
+.. autosummary::
+   :toctree: generated
 
-.. automodule:: causally
-   :no-members:
-   :no-inherited-members:
-
-This is the application programming interface (API) reference
-for classes (``CamelCase`` names) and functions
-(``underscore_case`` names) of causally.
+   causally
 
 
 Graph generators
