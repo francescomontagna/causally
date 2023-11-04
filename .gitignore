@@ -20,3 +20,6 @@ causally/quick_test.py
 # Setup
 .eggs
 **/*egg-info
+
+# Docs
+build
