@@ -122,20 +122,31 @@ for generation according to the following common SCMs:
 * Linear model: causal model with linear mechanisms and additive noise terms. 
    .. math:: 
       X_i := sum_{k \in \operatorname{PA_i}}w_kX_k + N_i
-
-   where :math:`\operatorname{PA_i}` denotes the set of parents of the node :math:`X_i`, and :math:`N_i` 
-   the exogenous random variable for :math:`X_i`.
+where :math:`\operatorname{PA_i}` denotes the set of parents of the node :math:`X_i`, and :math:`N_i` 
+the exogenous random variable for :math:`X_i`.
 
 * Nonlinear additive noise model: causal model with nonlinear mechanisms and additive noise terms.
+
    .. math:: 
       X_i := f_i(\operatorname{PA_i}) + N_i
-
-   where :math:`f_i` is the nonlinear causal mechanism.
+where :math:`f_i` is the nonlinear causal mechanism.
 
 * Post-nonlinar model: causal model with invertible funciton applied to the output of a 
 nonlinear additive noise model structural equation.
 
    .. math:: 
       X_i := g_i(f_i(\operatorname{PA_i}) + N_i)
+where :math:`g_i` is an invertible function.
 
-   where :math:`g_i` is an invertible function.
+
+In order to generate data from a causal model, we need to instantiate the followings:
+
+* A ``GraphGenerator``, e.g. py:class:`ErdosRenyi`. The class instance contains specifications
+for the graph generation
+
+* A 
+
+
+SCM assumptions
+---------------
+.. Need to add SCM properties stuff!
