@@ -135,12 +135,8 @@ if __name__ == "__main__":
         if args.noise_distr == 'gauss':
             # Sample noise on CPU to avoid NaN (PyTorch bug: https://discuss.pytorch.org/t/why-am-i-getting-a-nan-in-normal-mu-std-rsample/117401/8)
             noise_generator = rn.Normal(0, 1)
-        elif args.noise_distr == "gp":
-            noise_generator = rn.GPNoise(gamma=1)
-        elif args.noise_distr == "nn-tanh":
-            noise_generator = rn.TanHNoise()
-        elif args.noise_distr == "nn-tanh":
-            noise_generator = rn.EluNoise()
+        elif args.noise_distr == "nn":
+            noise_generator = rn.MLPNoise()
         else:
             raise ValueError(f"Unsupported noise type {args.noise_distr}.")
 
@@ -162,7 +158,7 @@ if __name__ == "__main__":
 
         # Causal mechanism generator
         if args.mechanisms == "nn":
-            causal_mechanism = cm.NeuralNetMechanism(weights_std=1)
+            causal_mechanism = cm.NeuralNetMechanism()
         elif args.mechanisms == "gp":
             causal_mechanism = cm.GaussianProcessMechanism()
         else: 
