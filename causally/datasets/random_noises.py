@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 class Distribution(metaclass=ABCMeta):
     """Base class to represent noise distributions."""
     @abstractmethod
-    def sample(self, shape : tuple[int]) -> NDArray:
+    def sample(self, size : tuple[int]) -> NDArray:
         raise NotImplementedError
 
 
