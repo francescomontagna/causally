@@ -1,1 +1,1 @@
-Coda base for synthetic data generation  `causall.ly` python library.
+Coda base for synthetic data generation  `causal.ly` python library.

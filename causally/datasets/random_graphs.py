@@ -1,3 +1,4 @@
+import random
 import igraph as ig
 import numpy as np
 import networkx as nx
@@ -14,21 +15,21 @@ class GraphGenerator(metaclass=ABCMeta):
         self.num_nodes = num_nodes
 
     @abstractmethod
-    def get_random_graph(self):
+    def get_random_graph(self, seed: Optional[int]):
         raise NotImplementedError()
 
     def _manual_seed(self, seed: int) -> None:
         """Set manual seed for deterministic graph generation. If None, seed is not set."""
         if seed is not None:
             np.random.seed(seed)
+            random.seed(seed)
     
-
     def _make_random_order(self, A: NDArray) -> NDArray:
         """Randomly permute nodes of A to avoid trivial ordering."""
         n_nodes = A.shape[0]
-        order = np.random.permutation(range(n_nodes))
-        A = A[order, :]
-        A = A[:, order]
+        permutation = np.random.permutation(range(n_nodes))
+        A = A[permutation, :]
+        A = A[:, permutation]
         return A
 
 
@@ -81,8 +82,6 @@ class GaussianRandomPartition(GraphGenerator):
 
     def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
-
-        # print(f"size of the clusters: {size_of_clusters}")
 
         # Initialize with the first cluster and remove it from the list
         A = self._sample_er_cluster(self.size_of_clusters[0])
@@ -178,10 +177,17 @@ class ErdosRenyi(GraphGenerator):
             Probability of edge between each pair of nodes.
         """
         if expected_degree is not None and p_edge is not None:
-            raise ValueError("Only one parameter between 'p' and 'm' can be assigned a value."\
-                             f" Got instead m={expected_degree} and p={p_edge}.")
+            raise ValueError("Only one parameter between 'p' and 'expected_degree' can be"\
+                             f" provided. Got instead m={expected_degree} and p={p_edge}.")
         if expected_degree is None and p_edge is None:
-            raise ValueError("Please provide a value for one of argument between 'm' and 'p'.")
+            raise ValueError("Please provide a value for one of argument between"\
+                             " 'expected_degree' and 'p_edge'.")
+        if expected_degree is not None and expected_degree == 0:
+            raise ValueError("expected value of 'expected_degree' is at least 1."\
+                             " Got 0 instead")
+        if p_edge is not None and p_edge < 0.1:
+            raise ValueError("expected value of 'expected_degree' is at least 0.1."\
+                             f" Got {p_edge} instead")
 
         super().__init__(num_nodes)
         self.expected_degree = expected_degree

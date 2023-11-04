@@ -5,11 +5,13 @@ import numpy as np
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 from datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
 from datasets.random_graphs import GraphGenerator
 from datasets.random_noises import RandomNoiseDistribution
+from datasets.scm_properties import SCMProperty
+from utils.data import topological_order
 
 # * Base SCM abstract class *
 class BaseStructuralCausalModel(metaclass=ABCMeta):
@@ -34,13 +36,17 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
     Attributes
     ----------
-    num_nodes : int
-        Number of nodes in the causal graph.
     adjacency : NDArray of shape (num_nodes, num_nodes) 
         Matrix rerpesentation of the causal graph. A[i, j] = 1 encodes a directed
         edge from node i to node j, whereas zero entris correspond to no edges.
     noise : NDArray of shape (num_samples, num_nodes)
         Samples of the noise terms.
+    self.misspecifications: Dict[str, SCMProperty]
+        Dictionary of SCM properties violating common assumptions.
+        The key is a string serving as identifier of the model violation (e.g. 'confounded')
+        Valid misspecifications are measurement error, autoregressive effect,
+        unfaithful path cancelling and presence of latent confounders.
+
     """
     def __init__(
         self, 
@@ -52,9 +58,9 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         self._set_random_seed(seed)
 
         self.num_samples = num_samples
-        self.num_nodes = graph_generator.num_nodes
         self.adjacency = graph_generator.get_random_graph()
-        self.noise = noise_generator.sample((self.num_samples, self.num_nodes))
+        self.noise_generator = noise_generator
+        self.misspecifications = dict()
 
 
     def _set_random_seed(self, seed: int):
@@ -66,22 +72,69 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             random.seed(seed)
 
 
+    def add_misspecificed_property(self, property: SCMProperty):
+        """Specify misspecification to the SCM, e.g. presence of latent confounders.
+
+        Parameters
+        ----------
+        property: SCMProperty
+            Model misspecification
+        """
+        self.misspecifications[property.identifier] = property
+
+
     def sample(self) -> Tuple[NDArray, NDArray]:
         """
         Sample a dataset of observations.
 
-        Returns:
+        Parameters
+        ----------
+        violations: List[str]
+            The list of violations to be modeled. Elements in the list are chosen from
+            {'confounded', 'unfaithful', 'autoregressive', 'measurement error'}, the order of
+            the list doesn't matter.
+
+        Returns
+        -------
         X : NDArray
             Numpy array with the generated dataset.
         A: NDArray
             Numpy adjacency matrix representation of the causal graph.
         """
-        X = self.noise.copy()
+        adjacency = self.adjacency.copy()
 
-        for i in range(self.num_nodes):
-            parents = np.nonzero(self.adjacency[:,i])[0]
-            if len(np.nonzero(self.adjacency[:,i])[0]) > 0:                
-                X[:, i] = self._sample_mechanism(X[:,parents], self.noise[:, i])
+        # Pre-process: graph misspecification
+        # TODO: very bad, Python compiler does not know self.misspecifications["confounded"] is ConfoundedModel instance
+        if "confounded" in list(self.misspecifications.keys()):
+            adjacency = self.misspecifications["confounded"].confound_adjacency(adjacency)
+        if "unfaithful" in list(self.misspecifications.keys()):
+            adjacency, unfaithful_triplets_order = self.misspecifications["unfaithful"].unfaithful_adjacency(adjacency)
+
+        # Sample the noise
+        noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
+        X = noise.copy()
+
+        # Generate the data starting from source nodes
+        for i in topological_order(adjacency):
+            parents = np.nonzero(adjacency[:,i])[0]
+            if len(np.nonzero(adjacency[:,i])[0]) > 0:    
+                X[:, i] = self._sample_mechanism(X[:,parents], noise[:, i])
+
+                # Autoregressive effect          
+                if "autoregressive" in list(self.misspecifications.keys()):
+                    X[:, i] = self.misspecifications["autoregressive"].add_time_lag(X[:, i])
+
+
+        # Post-process: data misspecification
+        if "measurement error" in  list(self.misspecifications.keys()):
+            self.misspecifications["measurement error"].add_measure_error(X)
+        if "confounded" in list(self.misspecifications.keys()):
+            d, _ = self.adjacency.shape
+            self.misspecifications["confounded"].confound_dataset(X, n_confounders=d)
+        if "unfaithful" in list(self.misspecifications.keys()):
+            self.misspecifications["unfaithful"].unfaithful_dataset(
+                X, noise, unfaithful_triplets_order
+            )
 
         return X, self.adjacency
     
@@ -92,60 +145,8 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
 
 
-# * PNL *
-class PostNonlinearModel(BaseStructuralCausalModel):
-    """Class for data generation from a postnonlinear model.
-    
-    Parameters
-    ----------
-    causal_mechanism: PredictionModel
-        Object for the generation of the nonlinar causal mechanism.
-        The object passed as argument must implement the PredictionModel abstract class,
-        and have a `predict` method.
-    invertible_function: InvertibleFunction
-        Invertible post-nonlinearity. Invertibility required for identifiability.
-    """
-    def __init__(
-        self,
-        num_samples: int,
-        graph_generator: GraphGenerator,
-        noise_generator: RandomNoiseDistribution | Distribution,
-        causal_mechanism : PredictionModel,
-        invertible_function : InvertibleFunction,
-        seed: int=None
-    ):
-        super().__init__(num_samples, graph_generator, noise_generator, seed)
-        
-        self.causal_mechanism = causal_mechanism
-        self.invertible_function = invertible_function
-
-    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-        """Generate effect given the direct parents `X` and the vector of noise terms.
-
-        Parameters
-        ----------
-        parents: NDArray of shape (n_samples, n_parents)
-            Multidimensional array of the parents observataions.
-        child_noise: NDArray of shape(n_samples,)
-            Vector of random noise observations of the generated effect.
-
-        Returns
-        -------
-        effect: NDArray of shape (n_samples,)
-            Vector of the effect observations generated given the parents and the noise.
-        """
-        anm_effect = self.causal_mechanism.predict(parents) + child_noise
-
-        # TODO: add all violations handling here!
-
-        # Apply the invertible postnonlinearity
-        effect = self.invertible_function(anm_effect)
-        return effect
-
-
-
 # * ANM *
-class AdditiveNoiseModel(PostNonlinearModel):
+class AdditiveNoiseModel(BaseStructuralCausalModel):
     """Class for data generation from a nonlinear additive noise model.
 
     The additive noise model is generated as a postnonlinear model with
@@ -166,13 +167,70 @@ class AdditiveNoiseModel(PostNonlinearModel):
         causal_mechanism : PredictionModel,
         seed: int=None
     ):
-        invertible_function = lambda x: x # identity
-        super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, invertible_function, seed)
+        super().__init__(num_samples, graph_generator, noise_generator, seed)
         self.causal_mechanism = causal_mechanism
 
     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-        return super()._sample_mechanism(parents, child_noise)
+        effect = self.causal_mechanism.predict(parents) + child_noise
+        return effect
 
+
+
+class PostNonlinearModel(AdditiveNoiseModel):
+    """Class for data generation from a postnonlinear model.
+    
+    Parameters
+    ----------
+    causal_mechanism: PredictionModel
+        Object for the generation of the nonlinar causal mechanism.
+        The object passed as argument must implement the PredictionModel abstract class,
+        and have a `predict` method.
+    invertible_function: InvertibleFunction
+        Invertible post-nonlinearity. Invertibility required for identifiability.
+    """
+    def __init__(
+        self,
+        num_samples: int,
+        graph_generator: GraphGenerator,
+        noise_generator: RandomNoiseDistribution | Distribution,
+        causal_mechanism : PredictionModel,
+        invertible_function : InvertibleFunction,
+        seed: int=None
+    ):
+        super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
+        
+        self.causal_mechanism = causal_mechanism
+        self.invertible_function = invertible_function
+
+    
+    def add_misspecificed_property(self, property: SCMProperty):
+        if property.identifier == "unfaithful":
+            raise ValueError("The PostNonlinear model does not support faithfulness violation.")
+        elif property.identifier == "autoregressive":
+            raise ValueError("The PostNonlinear model does not support autoregressive effects violation.")
+        else:
+            super().add_misspecificed_property(property)
+
+    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+        """Generate effect given the direct parents `X` and the vector of noise terms.
+
+        Parameters
+        ----------
+        parents: NDArray of shape (n_samples, n_parents)
+            Multidimensional array of the parents observataions.
+        child_noise: NDArray of shape(n_samples,)
+            Vector of random noise observations of the generated effect.
+
+        Returns
+        -------
+        effect: NDArray of shape (n_samples,)
+            Vector of the effect observations generated given the parents and the noise.
+        """
+        anm_effect = super()._sample_mechanism(parents, child_noise)
+
+        # Apply the invertible postnonlinearity
+        effect = self.invertible_function(anm_effect)
+        return effect
 
 
 # * Linear SCM *
@@ -203,12 +261,11 @@ class LinearModel(AdditiveNoiseModel):
     ):
         causal_mechanism = LinearMechanism(min_weight, max_weight, min_abs_weight)
         super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
-
-
+        
 
 
 # * SCM with mixed linear-nonlinear mechanisms *
-class MixedLinearNonlinearModel(PostNonlinearModel):
+class MixedLinearNonlinearModel(AdditiveNoiseModel):
     """Class for data generation with mixed linear and nonlinear mechanisms.
 
     Parameters
@@ -238,11 +295,10 @@ class MixedLinearNonlinearModel(PostNonlinearModel):
         noise_generator: RandomNoiseDistribution | Distribution,
         linear_mechanism : PredictionModel,
         nonlinear_mechanism : PredictionModel,
-        invertible_function : InvertibleFunction,
         linear_fraction = 0.5,
         seed: int=None
     ):
-        super().__init__(num_samples, graph_generator, noise_generator, nonlinear_mechanism, invertible_function, seed)
+        super().__init__(num_samples, graph_generator, noise_generator, nonlinear_mechanism, seed)
         self._linear_mechanism = linear_mechanism
         self.linear_fraction = linear_fraction
 
