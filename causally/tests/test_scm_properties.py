@@ -2,11 +2,11 @@ import numpy as np
 import random
 import math
 
-from datasets.scm import PostNonlinearModel, AdditiveNoiseModel, LinearModel
-from datasets.causal_mechanisms import LinearMechanism, NeuralNetMechanism, GaussianProcessMechanism
-from datasets.random_graphs import ErdosRenyi
-from datasets.random_noises import MLPNoise, Normal
-from datasets.scm_properties import ConfoundedModel, UnfaithfulModel, AutoregressiveModel, MeasurementErrorModel
+from causally.datasets.scm import PostNonlinearModel, AdditiveNoiseModel, LinearModel
+from causally.datasets.causal_mechanisms import LinearMechanism, NeuralNetMechanism, GaussianProcessMechanism
+from causally.datasets.random_graphs import ErdosRenyi
+from causally.datasets.random_noises import MLPNoise, Normal
+from causally.datasets.scm_properties import ConfoundedModel, UnfaithfulModel, AutoregressiveModel, MeasurementErrorModel
 
 SEED = 42
 np.random.seed(SEED)

@@ -12,6 +12,7 @@ venv
 causally/quick_test.py
 
 # Images
+plots
 **/*.png
 
 # Data generation arguments
@@ -20,3 +21,7 @@ causally/quick_test.py
 # Setup
 .eggs
 **/*egg-info
+
+# Docs
+build
+docs/source/generated
