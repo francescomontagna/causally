@@ -146,33 +146,33 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
 
 # # * ANM *
-# class AdditiveNoiseModel(BaseStructuralCausalModel):
-#     """Class for data generation from a nonlinear additive noise model.
+class AdditiveNoiseModel(BaseStructuralCausalModel):
+    """Class for data generation from a nonlinear additive noise model.
 
-#     The additive noise model is generated as a postnonlinear model with
-#     the invertible post-nonlinear function being the identity.
+    The additive noise model is generated as a postnonlinear model with
+    the invertible post-nonlinear function being the identity.
     
-#     Parameters
-#     ----------
-#     causal_mechanism: PredictionModel
-#         Object for the generation of the nonlinar causal mechanism.
-#         The object passed as argument must implement the PredictionModel abstract class,
-#         and have a `predict` method.
-#     """
-#     def __init__(
-#         self,
-#         num_samples: int,
-#         graph_generator: GraphGenerator,
-#         noise_generator: RandomNoiseDistribution | Distribution,
-#         causal_mechanism : PredictionModel,
-#         seed: int=None
-#     ):
-#         super().__init__(num_samples, graph_generator, noise_generator, seed)
-#         self.causal_mechanism = causal_mechanism
+    Parameters
+    ----------
+    causal_mechanism: PredictionModel
+        Object for the generation of the nonlinar causal mechanism.
+        The object passed as argument must implement the PredictionModel abstract class,
+        and have a `predict` method.
+    """
+    def __init__(
+        self,
+        num_samples: int,
+        graph_generator: GraphGenerator,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
+        causal_mechanism : PredictionModel,
+        seed: int=None
+    ):
+        super().__init__(num_samples, graph_generator, noise_generator, seed)
+        self.causal_mechanism = causal_mechanism
 
-#     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-#         effect = self.causal_mechanism.predict(parents) + child_noise
-#         return effect
+    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+        effect = self.causal_mechanism.predict(parents) + child_noise
+        return effect
 
 
 
