@@ -11,8 +11,5 @@ python:
       path: .
     - requirements: docs/requirements.txt
 
-submodules:
-  include: all
-
 sphinx:
   configuration: docs/source/conf.py
