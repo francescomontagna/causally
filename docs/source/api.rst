@@ -7,18 +7,6 @@ API
    causally
 
 
-Graph generators
-================
-
-.. currentmodule:: causally.datasets.random_graphs
-.. autosummary::
-   :toctree: generated/
-
-   ErdosRenyi
-   BarabasiAlbert
-   GaussianRandomPartition
-
-
 Noise distributions
 ===================
 
@@ -43,6 +31,20 @@ Causal mechanisms
    NeuralNetMechanism
    GaussianProcessMechanism
    InvertibleFunction
+
+
+Graph generators
+================
+
+.. currentmodule:: causally.datasets.random_graphs
+.. autosummary::
+   :toctree: generated/
+
+   GraphGenerator
+   GaussianRandomPartition
+   ErdosRenyi
+   BarabasiAlbert
+   
 
 SCM properties
 ===============

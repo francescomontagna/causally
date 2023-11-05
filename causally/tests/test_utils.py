@@ -1,6 +1,6 @@
 from numpy.typing import NDArray
 from utils.data import topological_order
-from datasets.random_graphs import ErdosRenyi
+from causally.datasets.random_graphs import ErdosRenyi
 
 # * Utilities *
 def top_order_errors(A : NDArray, order : NDArray):

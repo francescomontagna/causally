@@ -5,13 +5,13 @@ import numpy as np
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Tuple, List
+from typing import Union, Tuple
 
-from datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
-from datasets.random_graphs import GraphGenerator
-from datasets.random_noises import RandomNoiseDistribution
-from datasets.scm_properties import SCMProperty
-from utils.data import topological_order
+from causally.datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
+from causally.datasets.random_graphs import GraphGenerator
+from causally.datasets.random_noises import RandomNoiseDistribution
+from causally.datasets.scm_properties import SCMProperty
+from causally.utils.data import topological_order
 
 # * Base SCM abstract class *
 class BaseStructuralCausalModel(metaclass=ABCMeta):

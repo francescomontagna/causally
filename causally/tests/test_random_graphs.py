@@ -4,7 +4,7 @@ import math
 import numpy as np
 import networkx as nx
 
-from datasets.random_graphs import ErdosRenyi, BarabasiAlbert, GaussianRandomPartition
+from causally.datasets.random_graphs import ErdosRenyi, BarabasiAlbert, GaussianRandomPartition
 
 seed = 42
 random.seed(seed)
