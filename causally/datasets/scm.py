@@ -1,147 +1,147 @@
-# import torch
-# import random
-# import numpy as np
+import torch
+import random
+import numpy as np
 
-# from numpy.typing import NDArray
-# from abc import ABCMeta, abstractmethod
-# from torch.distributions.distribution import Distribution
-# from typing import Union, Tuple
+from numpy.typing import NDArray
+from abc import ABCMeta, abstractmethod
+from torch.distributions.distribution import Distribution
+from typing import Union, Tuple
 
-# from causally.datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
-# from causally.datasets.random_graphs import GraphGenerator
-# from causally.datasets.random_noises import RandomNoiseDistribution
-# from causally.datasets.scm_properties import SCMProperty
-# from causally.utils.data import topological_order
+from causally.datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
+from causally.datasets.random_graphs import GraphGenerator
+from causally.datasets.random_noises import RandomNoiseDistribution
+from causally.datasets.scm_properties import SCMProperty
+from causally.utils.data import topological_order
 
-# # * Base SCM abstract class *
-# class BaseStructuralCausalModel(metaclass=ABCMeta):
-#     """Base class for synthetic data generation.
+# * Base SCM abstract class *
+class BaseStructuralCausalModel(metaclass=ABCMeta):
+    """Base class for synthetic data generation.
 
-#     DataGenrator supports generation of linear, nonlinear ANM and PNL
-#     structural causal model with several distribution of the noise terms.
-#     The adjacency matrix are sampled according to one model between
-#     Erdos-Rényi, Scale-Free, Gaussian Random Process.
+    DataGenrator supports generation of linear, nonlinear ANM and PNL
+    structural causal model with several distribution of the noise terms.
+    The adjacency matrix are sampled according to one model between
+    Erdos-Rényi, Scale-Free, Gaussian Random Process.
 
-#     Parameters
-#     ----------
-#     num_samples : int:
-#         Number of samples in the dataset
-#     graph_generator : GraphGenerator
-#         Random graph generator implementing the 'get_random_graph' method. 
-#     noise_generator :  Union[RandomNoiseDistribution, Distribution]
-#         Sampler of the noise terms. It can be either a custom implementation of 
-#         the base class RandomNoiseDistribution, or a torch Distribution.
-#     seed : int, default None
-#         Seed for reproducibility. If None, then random seed not set.
+    Parameters
+    ----------
+    num_samples : int:
+        Number of samples in the dataset
+    graph_generator : GraphGenerator
+        Random graph generator implementing the 'get_random_graph' method. 
+    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+        Sampler of the noise terms. It can be either a custom implementation of 
+        the base class RandomNoiseDistribution, or a torch Distribution.
+    seed : int, default None
+        Seed for reproducibility. If None, then random seed not set.
 
-#     Attributes
-#     ----------
-#     adjacency : NDArray of shape (num_nodes, num_nodes) 
-#         Matrix rerpesentation of the causal graph. A[i, j] = 1 encodes a directed
-#         edge from node i to node j, whereas zero entris correspond to no edges.
-#     noise : NDArray of shape (num_samples, num_nodes)
-#         Samples of the noise terms.
-#     self.misspecifications: Dict[str, SCMProperty]
-#         Dictionary of SCM properties violating common assumptions.
-#         The key is a string serving as identifier of the model violation (e.g. 'confounded')
-#         Valid misspecifications are measurement error, autoregressive effect,
-#         unfaithful path cancelling and presence of latent confounders.
+    Attributes
+    ----------
+    adjacency : NDArray of shape (num_nodes, num_nodes) 
+        Matrix rerpesentation of the causal graph. A[i, j] = 1 encodes a directed
+        edge from node i to node j, whereas zero entris correspond to no edges.
+    noise : NDArray of shape (num_samples, num_nodes)
+        Samples of the noise terms.
+    self.misspecifications: Dict[str, SCMProperty]
+        Dictionary of SCM properties violating common assumptions.
+        The key is a string serving as identifier of the model violation (e.g. 'confounded')
+        Valid misspecifications are measurement error, autoregressive effect,
+        unfaithful path cancelling and presence of latent confounders.
 
-#     """
-#     def __init__(
-#         self, 
-#         num_samples : int, 
-#         graph_generator : GraphGenerator,
-#         noise_generator :  Union[RandomNoiseDistribution, Distribution],
-#         seed: int=None
-#     ):
-#         self._set_random_seed(seed)
+    """
+    def __init__(
+        self, 
+        num_samples : int, 
+        graph_generator : GraphGenerator,
+        noise_generator :  Union[RandomNoiseDistribution, Distribution],
+        seed: int=None
+    ):
+        self._set_random_seed(seed)
 
-#         self.num_samples = num_samples
-#         self.adjacency = graph_generator.get_random_graph()
-#         self.noise_generator = noise_generator
-#         self.misspecifications = dict()
-
-
-#     def _set_random_seed(self, seed: int):
-#         """Manually set the random seed. If the seed is None, then do nothing.
-#         """
-#         if seed is not None:
-#             np.random.seed(seed)
-#             torch.manual_seed(seed)
-#             random.seed(seed)
+        self.num_samples = num_samples
+        self.adjacency = graph_generator.get_random_graph()
+        self.noise_generator = noise_generator
+        self.misspecifications = dict()
 
 
-#     def add_misspecificed_property(self, property: SCMProperty):
-#         """Specify misspecification to the SCM, e.g. presence of latent confounders.
-
-#         Parameters
-#         ----------
-#         property: SCMProperty
-#             Model misspecification
-#         """
-#         self.misspecifications[property.identifier] = property
+    def _set_random_seed(self, seed: int):
+        """Manually set the random seed. If the seed is None, then do nothing.
+        """
+        if seed is not None:
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            random.seed(seed)
 
 
-#     def sample(self) -> Tuple[NDArray, NDArray]:
-#         """
-#         Sample a dataset of observations.
+    def add_misspecificed_property(self, property: SCMProperty):
+        """Specify misspecification to the SCM, e.g. presence of latent confounders.
 
-#         Parameters
-#         ----------
-#         violations: List[str]
-#             The list of violations to be modeled. Elements in the list are chosen from
-#             {'confounded', 'unfaithful', 'autoregressive', 'measurement error'}, the order of
-#             the list doesn't matter.
-
-#         Returns
-#         -------
-#         X : NDArray
-#             Numpy array with the generated dataset.
-#         A: NDArray
-#             Numpy adjacency matrix representation of the causal graph.
-#         """
-#         adjacency = self.adjacency.copy()
-
-#         # Pre-process: graph misspecification
-#         # TODO: very bad, Python compiler does not know self.misspecifications["confounded"] is ConfoundedModel instance
-#         if "confounded" in list(self.misspecifications.keys()):
-#             adjacency = self.misspecifications["confounded"].confound_adjacency(adjacency)
-#         if "unfaithful" in list(self.misspecifications.keys()):
-#             adjacency, unfaithful_triplets_order = self.misspecifications["unfaithful"].unfaithful_adjacency(adjacency)
-
-#         # Sample the noise
-#         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
-#         X = noise.copy()
-
-#         # Generate the data starting from source nodes
-#         for i in topological_order(adjacency):
-#             parents = np.nonzero(adjacency[:,i])[0]
-#             if len(np.nonzero(adjacency[:,i])[0]) > 0:    
-#                 X[:, i] = self._sample_mechanism(X[:,parents], noise[:, i])
-
-#                 # Autoregressive effect          
-#                 if "autoregressive" in list(self.misspecifications.keys()):
-#                     X[:, i] = self.misspecifications["autoregressive"].add_time_lag(X[:, i])
+        Parameters
+        ----------
+        property: SCMProperty
+            Model misspecification
+        """
+        self.misspecifications[property.identifier] = property
 
 
-#         # Post-process: data misspecification
-#         if "measurement error" in  list(self.misspecifications.keys()):
-#             self.misspecifications["measurement error"].add_measure_error(X)
-#         if "confounded" in list(self.misspecifications.keys()):
-#             d, _ = self.adjacency.shape
-#             self.misspecifications["confounded"].confound_dataset(X, n_confounders=d)
-#         if "unfaithful" in list(self.misspecifications.keys()):
-#             self.misspecifications["unfaithful"].unfaithful_dataset(
-#                 X, noise, unfaithful_triplets_order
-#             )
+    def sample(self) -> Tuple[NDArray, NDArray]:
+        """
+        Sample a dataset of observations.
 
-#         return X, self.adjacency
+        Parameters
+        ----------
+        violations: List[str]
+            The list of violations to be modeled. Elements in the list are chosen from
+            {'confounded', 'unfaithful', 'autoregressive', 'measurement error'}, the order of
+            the list doesn't matter.
+
+        Returns
+        -------
+        X : NDArray
+            Numpy array with the generated dataset.
+        A: NDArray
+            Numpy adjacency matrix representation of the causal graph.
+        """
+        adjacency = self.adjacency.copy()
+
+        # Pre-process: graph misspecification
+        # TODO: very bad, Python compiler does not know self.misspecifications["confounded"] is ConfoundedModel instance
+        if "confounded" in list(self.misspecifications.keys()):
+            adjacency = self.misspecifications["confounded"].confound_adjacency(adjacency)
+        if "unfaithful" in list(self.misspecifications.keys()):
+            adjacency, unfaithful_triplets_order = self.misspecifications["unfaithful"].unfaithful_adjacency(adjacency)
+
+        # Sample the noise
+        noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
+        X = noise.copy()
+
+        # Generate the data starting from source nodes
+        for i in topological_order(adjacency):
+            parents = np.nonzero(adjacency[:,i])[0]
+            if len(np.nonzero(adjacency[:,i])[0]) > 0:    
+                X[:, i] = self._sample_mechanism(X[:,parents], noise[:, i])
+
+                # Autoregressive effect          
+                if "autoregressive" in list(self.misspecifications.keys()):
+                    X[:, i] = self.misspecifications["autoregressive"].add_time_lag(X[:, i])
+
+
+        # Post-process: data misspecification
+        if "measurement error" in  list(self.misspecifications.keys()):
+            self.misspecifications["measurement error"].add_measure_error(X)
+        if "confounded" in list(self.misspecifications.keys()):
+            d, _ = self.adjacency.shape
+            self.misspecifications["confounded"].confound_dataset(X, n_confounders=d)
+        if "unfaithful" in list(self.misspecifications.keys()):
+            self.misspecifications["unfaithful"].unfaithful_dataset(
+                X, noise, unfaithful_triplets_order
+            )
+
+        return X, self.adjacency
     
 
-#     @abstractmethod
-#     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-#         raise NotImplementedError()
+    @abstractmethod
+    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+        raise NotImplementedError()
 
 
 
