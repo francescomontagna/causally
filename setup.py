@@ -33,7 +33,8 @@ setup(
         "numpy>=1.25.2",
         "networkx>=3.1",
         "scikit-learn>=1.3.0",
-        "torch>=2.0.1"
+        "torch>=2.0.1",
+        "python-igraph>=0.11.2"
     ], # Optional
     setup_requires=['pytest-runner', 'flake8'],
     tests_require=['pytest'],
