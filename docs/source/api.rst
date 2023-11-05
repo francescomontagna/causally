@@ -46,20 +46,20 @@ Graph generators
    BarabasiAlbert
    
 
-SCM properties
-===============
+.. SCM properties
+.. ===============
 
-Causally allows modelling assumptions on the SCM such as presence of latent confounders, 
-unfaithfulness of the data distribution, presence of measurement errors and time structure.
+.. Causally allows modelling assumptions on the SCM such as presence of latent confounders, 
+.. unfaithfulness of the data distribution, presence of measurement errors and time structure.
 
-.. currentmodule:: causally.datasets.scm_properties
-.. autosummary::
-   :toctree: generated/
+.. .. currentmodule:: causally.datasets.scm_properties
+ .. autosummary::
+..    :toctree: generated/
 
-   ConfoundedModel
-   MeasurementErrorModel
-   UnfaithfulModel
-   AutoregressiveModel
+..    ConfoundedModel
+..    MeasurementErrorModel
+..    UnfaithfulModel
+..    AutoregressiveModel
 
 
 Structural causal models
