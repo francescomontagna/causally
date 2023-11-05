@@ -1,10 +1,10 @@
 import argparse
 import os
 import shutil
-import causally.datasets.scm as scm
 import causally.datasets.random_graphs as rg
 import causally.datasets.random_noises as rn 
 import causally.datasets.causal_mechanisms as cm
+import causally.datasets.scm as scm
 
 from causally.utils.data import generate_and_store_dataset
 
