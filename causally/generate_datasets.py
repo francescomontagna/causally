@@ -185,5 +185,4 @@ if __name__ == "__main__":
             raise ValueError("Currently PNL graph generation is not supported. TODO: fix this")
         
 
-        # generate_and_store_dataset(data_file, groundtruth_file, model)
-        dataset, groundtruth = model.sample()
+        generate_and_store_dataset(data_file, groundtruth_file, model)

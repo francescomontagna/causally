@@ -2,7 +2,7 @@ import random
 import numpy as np
 import warnings
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from numpy.typing import NDArray
 from typing import Union, List
 

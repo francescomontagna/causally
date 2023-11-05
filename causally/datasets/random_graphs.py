@@ -6,7 +6,7 @@ from typing import Optional
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 
-from causally.utils.data import max_edges_in_dag # This is the problem in the docs generation
+from causally.utils.data import max_edges_in_dag
 
 
 # Base class
