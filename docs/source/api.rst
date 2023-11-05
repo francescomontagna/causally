@@ -73,6 +73,6 @@ equations.
    :toctree: generated/
 
    BaseStructuralCausalModel
+   AdditiveNoiseModel
    LinearModel
    PostNonlinearModel
-   AdditiveNoiseModel
