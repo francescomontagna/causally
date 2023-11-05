@@ -176,138 +176,138 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
 
 
 
-# class PostNonlinearModel(AdditiveNoiseModel):
-#     """Class for data generation from a postnonlinear model.
+class PostNonlinearModel(AdditiveNoiseModel):
+    """Class for data generation from a postnonlinear model.
     
-#     Parameters
-#     ----------
-#     causal_mechanism: PredictionModel
-#         Object for the generation of the nonlinar causal mechanism.
-#         The object passed as argument must implement the PredictionModel abstract class,
-#         and have a `predict` method.
-#     invertible_function: InvertibleFunction
-#         Invertible post-nonlinearity. Invertibility required for identifiability.
-#     """
-#     def __init__(
-#         self,
-#         num_samples: int,
-#         graph_generator: GraphGenerator,
-#         noise_generator: RandomNoiseDistribution | Distribution,
-#         causal_mechanism : PredictionModel,
-#         invertible_function : InvertibleFunction,
-#         seed: int=None
-#     ):
-#         super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
+    Parameters
+    ----------
+    causal_mechanism: PredictionModel
+        Object for the generation of the nonlinar causal mechanism.
+        The object passed as argument must implement the PredictionModel abstract class,
+        and have a `predict` method.
+    invertible_function: InvertibleFunction
+        Invertible post-nonlinearity. Invertibility required for identifiability.
+    """
+    def __init__(
+        self,
+        num_samples: int,
+        graph_generator: GraphGenerator,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
+        causal_mechanism : PredictionModel,
+        invertible_function : InvertibleFunction,
+        seed: int=None
+    ):
+        super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
         
-#         self.causal_mechanism = causal_mechanism
-#         self.invertible_function = invertible_function
+        self.causal_mechanism = causal_mechanism
+        self.invertible_function = invertible_function
 
     
-#     def add_misspecificed_property(self, property: SCMProperty):
-#         if property.identifier == "unfaithful":
-#             raise ValueError("The PostNonlinear model does not support faithfulness violation.")
-#         elif property.identifier == "autoregressive":
-#             raise ValueError("The PostNonlinear model does not support autoregressive effects violation.")
-#         else:
-#             super().add_misspecificed_property(property)
+    def add_misspecificed_property(self, property: SCMProperty):
+        if property.identifier == "unfaithful":
+            raise ValueError("The PostNonlinear model does not support faithfulness violation.")
+        elif property.identifier == "autoregressive":
+            raise ValueError("The PostNonlinear model does not support autoregressive effects violation.")
+        else:
+            super().add_misspecificed_property(property)
 
-#     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-#         """Generate effect given the direct parents `X` and the vector of noise terms.
+    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+        """Generate effect given the direct parents `X` and the vector of noise terms.
 
-#         Parameters
-#         ----------
-#         parents: NDArray of shape (n_samples, n_parents)
-#             Multidimensional array of the parents observataions.
-#         child_noise: NDArray of shape(n_samples,)
-#             Vector of random noise observations of the generated effect.
+        Parameters
+        ----------
+        parents: NDArray of shape (n_samples, n_parents)
+            Multidimensional array of the parents observataions.
+        child_noise: NDArray of shape(n_samples,)
+            Vector of random noise observations of the generated effect.
 
-#         Returns
-#         -------
-#         effect: NDArray of shape (n_samples,)
-#             Vector of the effect observations generated given the parents and the noise.
-#         """
-#         anm_effect = super()._sample_mechanism(parents, child_noise)
+        Returns
+        -------
+        effect: NDArray of shape (n_samples,)
+            Vector of the effect observations generated given the parents and the noise.
+        """
+        anm_effect = super()._sample_mechanism(parents, child_noise)
 
-#         # Apply the invertible postnonlinearity
-#         effect = self.invertible_function(anm_effect)
-#         return effect
+        # Apply the invertible postnonlinearity
+        effect = self.invertible_function(anm_effect)
+        return effect
 
 
-# # * Linear SCM *
-# class LinearModel(AdditiveNoiseModel):
-#     """Class for data generation from a linear structural causal model.
+# * Linear SCM *
+class LinearModel(AdditiveNoiseModel):
+    """Class for data generation from a linear structural causal model.
 
-#     The LinearModel is defined as an additive noise model with linear mechanisms.
+    The LinearModel is defined as an additive noise model with linear mechanisms.
     
-#     Parameters
-#     ----------
-#     min_weight: float, default is -1
-#         Minimum value of causal mechanisms weights
-#     max_weight: float, default is 1
-#         Maximum value of causal mechanisms weights
-#     min_abs_weight: float, default is 0.05
-#         Minimum value of the absolute value of any causal mechanism weight.
-#         Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
-#     """
-#     def __init__(
-#         self,
-#         num_samples : int, 
-#         graph_generator : GraphGenerator,
-#         noise_generator :  Union[RandomNoiseDistribution, Distribution],
-#         min_weight: float = -1,
-#         max_weight: float = 1,
-#         min_abs_weight = 0.05,
-#         seed: int=None
-#     ):
-#         causal_mechanism = LinearMechanism(min_weight, max_weight, min_abs_weight)
-#         super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
+    Parameters
+    ----------
+    min_weight: float, default is -1
+        Minimum value of causal mechanisms weights
+    max_weight: float, default is 1
+        Maximum value of causal mechanisms weights
+    min_abs_weight: float, default is 0.05
+        Minimum value of the absolute value of any causal mechanism weight.
+        Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
+    """
+    def __init__(
+        self,
+        num_samples : int, 
+        graph_generator : GraphGenerator,
+        noise_generator :  Union[RandomNoiseDistribution, Distribution],
+        min_weight: float = -1,
+        max_weight: float = 1,
+        min_abs_weight = 0.05,
+        seed: int=None
+    ):
+        causal_mechanism = LinearMechanism(min_weight, max_weight, min_abs_weight)
+        super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
         
 
 
-# # * SCM with mixed linear-nonlinear mechanisms *
-# class MixedLinearNonlinearModel(AdditiveNoiseModel):
-#     """Class for data generation with mixed linear and nonlinear mechanisms.
+# * SCM with mixed linear-nonlinear mechanisms *
+class MixedLinearNonlinearModel(AdditiveNoiseModel):
+    """Class for data generation with mixed linear and nonlinear mechanisms.
 
-#     Parameters
-#     ----------
-#     linear_mechanism: PredictionModel
-#         Object for the generation of the linear causal mechanism.
-#         The object passed as argument must implement the PredictionModel abstract class,
-#         and have a `predict` method.
-#     nonlinear_mechanism: PredictionModel
-#         Object for the generation of the nonlinar causal mechanism.
-#         The object passed as argument must implement the PredictionModel abstract class,
-#         and have a `predict` method.
-#     invertible_function: InvertibleFunction
-#         Invertible post-nonlinearity (not applied to the linear mechanism).
-#         Invertibility required for identifiability.
-#     linear_fraction: float, default 0.5
-#         The fraction of linear mechanisms over the total number of causal relationships.
-#         E.g. for `linear_fraction = 0.5` data are generated from an SCM with half of the
-#         structural equations with linear causal mechanisms. Be aware that linear mechanisms
-#         are not identifiable in case of additive noise term.
-#     """
+    Parameters
+    ----------
+    linear_mechanism: PredictionModel
+        Object for the generation of the linear causal mechanism.
+        The object passed as argument must implement the PredictionModel abstract class,
+        and have a `predict` method.
+    nonlinear_mechanism: PredictionModel
+        Object for the generation of the nonlinar causal mechanism.
+        The object passed as argument must implement the PredictionModel abstract class,
+        and have a `predict` method.
+    invertible_function: InvertibleFunction
+        Invertible post-nonlinearity (not applied to the linear mechanism).
+        Invertibility required for identifiability.
+    linear_fraction: float, default 0.5
+        The fraction of linear mechanisms over the total number of causal relationships.
+        E.g. for `linear_fraction = 0.5` data are generated from an SCM with half of the
+        structural equations with linear causal mechanisms. Be aware that linear mechanisms
+        are not identifiable in case of additive noise term.
+    """
 
-#     def __init__(
-#         self,
-#         num_samples: int,
-#         graph_generator: GraphGenerator,
-#         noise_generator: RandomNoiseDistribution | Distribution,
-#         linear_mechanism : PredictionModel,
-#         nonlinear_mechanism : PredictionModel,
-#         linear_fraction = 0.5,
-#         seed: int=None
-#     ):
-#         super().__init__(num_samples, graph_generator, noise_generator, nonlinear_mechanism, seed)
-#         self._linear_mechanism = linear_mechanism
-#         self.linear_fraction = linear_fraction
+    def __init__(
+        self,
+        num_samples: int,
+        graph_generator: GraphGenerator,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
+        linear_mechanism : PredictionModel,
+        nonlinear_mechanism : PredictionModel,
+        linear_fraction = 0.5,
+        seed: int=None
+    ):
+        super().__init__(num_samples, graph_generator, noise_generator, nonlinear_mechanism, seed)
+        self._linear_mechanism = linear_mechanism
+        self.linear_fraction = linear_fraction
 
         
-#     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-#         # Randomly sample the type of mechanism: linear or nonlinear
-#         linear = np.random.binomial(n=1, p=self.linear_fraction) == 1
+    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+        # Randomly sample the type of mechanism: linear or nonlinear
+        linear = np.random.binomial(n=1, p=self.linear_fraction) == 1
 
-#         if linear:
-#             return self._linear_mechanism.predict(parents) + child_noise
-#         else:
-#             return super()._sample_mechanism(parents, child_noise)
+        if linear:
+            return self._linear_mechanism.predict(parents) + child_noise
+        else:
+            return super()._sample_mechanism(parents, child_noise)
