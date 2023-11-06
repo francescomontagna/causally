@@ -1,10 +1,9 @@
-import pytest
 import random
 import math
 import numpy as np
 import networkx as nx
 
-from causally.datasets.random_graphs import ErdosRenyi, BarabasiAlbert, GaussianRandomPartition
+from causally.graph.random_graphs import ErdosRenyi, BarabasiAlbert, GaussianRandomPartition
 
 seed = 42
 random.seed(seed)
@@ -87,7 +86,7 @@ def test_grp_has_expected_number_of_nodes():
     for num_nodes in nodes_values:
         generator = GaussianRandomPartition(
             num_nodes=num_nodes,
-            p_in=0.05,
+            p_in=0.1,
             p_out=0.4,
             n_clusters=2
         )
@@ -261,7 +260,6 @@ def test_er_large_sparse_number_of_edges_and_degree_regularity():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 50
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree" : [],
         "max_outcome_degree" : [],

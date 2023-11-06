@@ -1,10 +1,10 @@
 import argparse
 import os
 import shutil
-import causally.datasets.random_graphs as rg
-import causally.datasets.random_noises as rn 
-import causally.datasets.causal_mechanisms as cm
-import causally.datasets.scm as scm
+import causally.scm.scm as scm
+import causally.graph.random_graphs as rg
+import causally.scm.random_noises as rn 
+import causally.scm.causal_mechanisms as cm
 
 from causally.utils.data import generate_and_store_dataset
 
@@ -18,7 +18,6 @@ def args_sanity_check(args):
         raise ValueError("SF graphs can not accept `-p` as density parameter. Provide a valid value for `-m`")
 
     # TODO: add more!
-
 
 
 if __name__ == "__main__":
