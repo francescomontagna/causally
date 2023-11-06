@@ -145,7 +145,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
 
 
-# * ANM *
+# # * ANM *
 class AdditiveNoiseModel(BaseStructuralCausalModel):
     """Class for data generation from a nonlinear additive noise model.
 
@@ -163,7 +163,7 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
         self,
         num_samples: int,
         graph_generator: GraphGenerator,
-        noise_generator: RandomNoiseDistribution | Distribution,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
         causal_mechanism : PredictionModel,
         seed: int=None
     ):
@@ -192,7 +192,7 @@ class PostNonlinearModel(AdditiveNoiseModel):
         self,
         num_samples: int,
         graph_generator: GraphGenerator,
-        noise_generator: RandomNoiseDistribution | Distribution,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
         causal_mechanism : PredictionModel,
         invertible_function : InvertibleFunction,
         seed: int=None
@@ -292,7 +292,7 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
         self,
         num_samples: int,
         graph_generator: GraphGenerator,
-        noise_generator: RandomNoiseDistribution | Distribution,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
         linear_mechanism : PredictionModel,
         nonlinear_mechanism : PredictionModel,
         linear_fraction = 0.5,
