@@ -64,6 +64,13 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 # *** Wrappers of numpy distributions *** #
 class Normal(Distribution):
     """Wrapper for np.random.Generator.normal() sampler.
+
+    Parameters
+    ----------
+    loc: float, default 0
+        The mean of the sample.
+    std: float, default 1
+        The standard deviation of the sample.
     """
     def __init__(
             self,
@@ -89,11 +96,35 @@ class Normal(Distribution):
 
 # *** MLP transformation of standard normal *** #
 class MLPNoise(RandomNoiseDistribution):
-    """Simple 1 layer NN transformation.
+    """Neural network to generate samples as transformation of a standard normal.
+
+    Generate a random variable with unknown distribution as a nonlinear transformation of 
+    a standard Gaussian. The transformation is parametrized by a simple neural network
+    with one hidden layer and nonlinear activations. 
+
+    Parameters
+    ----------
+    hidden_dim: int, default 100
+        Number of neurons in the hidden layer.
+    activation: nn.Module, default `nn.Sigmoid`
+        The nonlinear activation functin.
+    bias: bool, default True
+        If True, include the bias term.
+    a_weight: float, default -3
+        Lower bound for the value of the model weights. 
+    b_weight: float, default 3
+        Upper bound for the value of the model weights. 
+    a_bias: float, default -1
+        Lower bound for the value of the model bias terms. 
+    b_bias: float, default 1
+        Upper bound for the value of the model bias terms. 
+    standardize: bool, default False
+        If True, remove the empirical mean and variance from the transformed
+        random variable.
     """
     def __init__(
         self, 
-        hidden_units: int=100, 
+        hidden_dim: int=100, 
         activation: nn.Module=nn.Sigmoid(), 
         bias: bool=False, 
         a_weight: float=-3., 
@@ -103,7 +134,7 @@ class MLPNoise(RandomNoiseDistribution):
         standardize: bool=False
     ) -> None:
         super().__init__(standardize)
-        self.hidden_units = hidden_units
+        self.hidden_dim = hidden_dim
         self.activation = activation
         self.bias = bias
         self.a_weight = a_weight
@@ -119,9 +150,9 @@ class MLPNoise(RandomNoiseDistribution):
              " If input has 1 dimension, consider reshaping it with reshape(-1, 1)")
         num_features = X.shape[1]
         torch_X = torch.from_numpy(X)
-        layer1 = self._init_params(nn.Linear(num_features, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
-        layer2 = self._init_params(nn.Linear(self.hidden_units, self.hidden_units, bias=self.bias, dtype=torch_X.dtype))
-        layer3 = self._init_params(nn.Linear(self.hidden_units, num_features, bias=self.bias, dtype=torch_X.dtype))
+        layer1 = self._init_params(nn.Linear(num_features, self.hidden_dim, bias=self.bias, dtype=torch_X.dtype))
+        layer2 = self._init_params(nn.Linear(self.hidden_dim, self.hidden_dim, bias=self.bias, dtype=torch_X.dtype))
+        layer3 = self._init_params(nn.Linear(self.hidden_dim, num_features, bias=self.bias, dtype=torch_X.dtype))
         model = nn.Sequential(
             layer1,
             self.activation,

@@ -15,15 +15,15 @@ class SCMProperty(metaclass=ABCMeta):
 
 # * Latent Confouders Utilities *
 class ConfoundedModel(SCMProperty):
-    def __init__(self, p_confounder: float = 0.2):
-        """Utility functions for SCM generation under confounding effects.
+    """Utility functions for SCM generation under confounding effects.
 
-        Parameters
-        ----------
-        p_confounder: float, default 0.2
-            The probability of adding a latent common cause between a pair of nodes,
-            sampled as a Bernoulli random variable.
-        """
+    Parameters
+    ----------
+    p_confounder: float, default 0.2
+        The probability of adding a latent common cause between a pair of nodes,
+        sampled as a Bernoulli random variable.
+    """
+    def __init__(self, p_confounder: float = 0.2):
         super().__init__(identifier="confounded")
         self.p_confounder = p_confounder
 
@@ -74,7 +74,7 @@ class ConfoundedModel(SCMProperty):
         ----------
         X: NDArray of shape (num_samples, 2*num_nodes)
             The dataset with latent confoudners observations. The columns
-            corresponding to confounders' observations are the first 'n_confounders'.
+            corresponding to confounders' observations are the first `n_confounders`.
         n_confounders: int
             The number of latent confounders.
 
@@ -88,17 +88,19 @@ class ConfoundedModel(SCMProperty):
 
 # * Measurement Error Utilities *
 class MeasurementErrorModel(SCMProperty):
-    def __init__(self, gamma:Union[float, List[float]]) -> None:
-        """Utility functions for SCM generation with measurement error.
+    """Utility functions for SCM generation with measurement error.
 
-        Parameters
-        ----------
-        gamma: Union[float, List[float]] 
-            The inverse signal to noise ratio Var(error)/Var(signal) parametrizing
-            the variance of the measurement error proportionally to the variance of
-            the signal. If a single float is provided, then gamma is the same for each
-            column of the data matrix. Else, gamma is a vector of shape (num_nodes, ).
-        """
+    Parameters
+    ----------
+    gamma: Union[float, List[float]] 
+        The inverse signal to noise ratio
+        :math:`\frac{\operatorname{Var}(\operatorname{error})}{\operatorname{Var}(\operatorname{signal})}`
+        parametrizing the variance of the measurement error proportionally to the
+        variance of the signal. If a single float is provided, then gamma is the
+        same for each column of the data matrix. Else, gamma is a vector of shape
+        (num_nodes, ).
+    """
+    def __init__(self, gamma:Union[float, List[float]]) -> None:
         super().__init__(identifier="measurement error")
         if not gamma > 0 and gamma <= 1:
             raise ValueError("Signal to noise ratio outside of  (0, 1] interval")
@@ -115,7 +117,8 @@ class MeasurementErrorModel(SCMProperty):
         -------
         X: NDArray of shape (num_samples, num_nodes)
             The input dataset with measurement error sampled from a zero
-            centered gaussian with variance Var(error) = gamma*Var(signal).
+            centered gaussian with variance
+            :math:`\operatorname{Var}(\operatorname{error})} = \gamma*{\operatorname{Var}(\operatorname{signal})}`.
         """
         n_samples, n_nodes = X.shape
         if not isinstance(self.gamma, list):
@@ -133,12 +136,18 @@ class MeasurementErrorModel(SCMProperty):
 
 # * Path Canceling Utilities *
 class UnfaithfulModel(SCMProperty):
-    def __init__(self, p_unfaithful: float) -> None:
-        """Utility functions for SCM generation with measurement error.
+    """Utility functions for SCM generation with measurement error.
 
-        Class modelling unfaithful data cancelling in fully connected triplets
-        X -> Y <- Z -> X. 
-        """
+    Class modelling unfaithful data cancelling in fully connected triplets
+    `X -> Y <- Z -> X`. 
+
+    Parameters
+    ----------
+    p_unfaithful: float
+        Probability of  unfaitfhul conditional independence in the presence of
+        a fully connected triplet. 
+    """
+    def __init__(self, p_unfaithful: float) -> None:
         super().__init__(identifier="unfaithful")
         self.p_unfaithful = p_unfaithful
 
@@ -163,8 +172,8 @@ class UnfaithfulModel(SCMProperty):
             Matrix of the SCM additive noise terms.
         unfaithful_triplets_toporder : List[List[int]]
             Represent moralized colliders by their topological order.
-            E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet.
-            To model unfaithfulness, add X_noise[:, 2] to X[0:, ]
+            E.g. `1->0<-2`, `1->2` is uniquely represented by `[1, 2, 0]` toporder of the triplet.
+            To model unfaithfulness, add `X_noise[:, 2]` to `X[0:, ]`
         """
         # edges_removed = np.transpose(np.nonzero(unfaithful_adj - faithful_adj))
         added_noise = dict()
@@ -195,7 +204,7 @@ class UnfaithfulModel(SCMProperty):
             unfaithful to the graph
         unfaithful_triplets_toporder : List[tuple(int)]
             Represent moralized colliders by their topological order.
-            E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet
+            E.g. `1->0<-2`, `1->2` is uniquely represented by `[1, 2, 0]` toporder of the triplet
         """
 
         moral_colliders_toporder = self._find_moral_colliders(adjacency)
@@ -252,7 +261,7 @@ class UnfaithfulModel(SCMProperty):
         ------
         moral_colliders_toporder : List[List[int]]
             Represent moralized colliders by their topological order.
-            E.g. 1->0<-2, 1->2 is uniquely represented by [1, 2, 0] toporder of the triplet
+            E.g. `1->0<-2`,`1->2`  is uniquely represented by `[1, 2, 0]` toporder of the triplet.
         """
         # Represent moralized colliders by their topological order.
         moral_colliders_toporder = list()
@@ -281,25 +290,44 @@ class UnfaithfulModel(SCMProperty):
 
 # * Time effects utilities * 
 class AutoregressiveModel(SCMProperty):
+    """Utility functions for SCM generation with time lags effects.
+
+    Structural equations take the autoregressive form
+
+    .. math:
+
+    X_i(t):= f_i(\operatorname{PA}_i(t)) + N_i + \sum_{k=t-\operatorname{order}} \alpha(k)*X_i(k)
+
+    where :math:`f_i` is the nonlinear causal mechanism,
+    :math:`N_i` is the noise term of the structural equation,
+    `\alpha(k)` is a coefficient uniformly sampled between -1 and 1,
+    :math:`t` is the sample step index, interpreted as the time step.
+
+    Parameters
+    ----------
+    order: int
+        The number of time lags
+    """
     def __init__(self, order: int) -> None:
-        """Utility functions for SCM generation with time lags effects.
-
-        Structural equations take the autoregressive form
-        X_i(t):= f(parents_i(t)) + N_i + sum_{k=t-order} alpha(k)*X_i(k)
-        where N_i is the noise term of the structural equation, alpha(k)
-        is a coefficient uniformly sampled between -1 and 1, t is the
-        sample step index, interpreted as the time step.
-
-        Parameters
-        ----------
-        order: int
-            The number of time lags
-        """
         super().__init__(identifier="autoregressive")
         self.order = order
 
 
     def add_time_lag(self, X: NDArray):
+        """Add time effect to the input.
+
+        The time effect is added as a liner combination of the prevous `self.order`
+        observations of the variable `X`.
+
+        Parameters
+        X: NDArray of shape (num_samples)
+            Observations of a random node.
+
+        Returns
+        -------
+        X: NDArray of shape (num_samples)
+            Observations of a random node with addition of the time lagged effects.
+        """
         if len(X) <= self.order:
             warnings.warn("The autoregressive order is larger or equal than the number"\
                             " of samples of X. This would cause an IndexError. Reducing"\

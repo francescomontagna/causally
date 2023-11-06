@@ -1,7 +1,3 @@
-"""Utilities for causal mechanisms generation.
-"""
-
-# import GPy
 import numpy as np
 from typing import Callable
 from numpy.typing import NDArray
@@ -27,11 +23,11 @@ class LinearMechanism(PredictionModel):
 
     Parameters
     ----------
-    min_weight: float, default is -1
+    min_weight: float, default -1
         Minimum value of causal mechanisms weights
-    max_weight: float, default is 1
+    max_weight: float, default 1
         Maximum value of causal mechanisms weights
-    min_abs_weight: float, default is 0.05
+    min_abs_weight: float, default 0.05
         Minimum value of the absolute value of any causal mechanism weight.
         Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
     """
@@ -89,6 +85,21 @@ class LinearMechanism(PredictionModel):
 # * Nonlinear mechanisms *
 class NeuralNetMechanism(PredictionModel):
     """Nonlinear causal mechanism parametrized by a neural network.
+
+    The transformation is parametrized by a simple neural network with
+    one hidden layer, followed by an activation function, LayerNorm, 
+    and the linear output layer.
+
+    Parameters
+    ----------
+    weights_mean: float, default 0
+        Average value of the initialized weights.
+    weights_std: float, default 0
+        Standard deviation of the initialized weights.
+    hidden_dim: int, default 10
+        Number of neurons in the hidden layer
+    activation: nn.Module, default `nn.PReLU`
+        The nonlinear activation functin.
     """
     def __init__(
         self,
@@ -132,6 +143,9 @@ class NeuralNetMechanism(PredictionModel):
             nn.Linear(n_causes, self.hidden_dim),
             self.activation,
             nn.LayerNorm(self.hidden_dim),
+            # nn.Linear(self.hidden_dim, self.hidden_dim),
+            # self.activation,
+            # nn.LayerNorm(self.hidden_dim),
             nn.Linear(self.hidden_dim, 1)
         )
         self._model.apply(self._weight_init)
@@ -156,24 +170,29 @@ class NeuralNetMechanism(PredictionModel):
 
     @property
     def model(self):
+        """Return the nn.Module instance of the neural network architecture."""
         if self._model is None:
             raise ValueError("Torch model not initialized. Call `self.predict()` first")
         return self._model
 
 
 class GaussianProcessMechanism(PredictionModel):
+    """Nonlinear causal mechanism sampled from a gaussian process.
+
+    The nonlinear transformation is generated sampling the effect from a
+    gaussian process with covariance matrix defined as the kernel matrix of the
+    parents' observations.
+
+    Parameters
+    ----------
+    gamma : float, default 1
+        The gamma parameters fixing the variance of the kernel. 
+        Larger values of gamma determines bigger magnitude of the causal mechanisms.
+    """
     def __init__(
         self,
         gamma: float = 1.
     ):
-        """Nonlinear causal mechanism sampled from a gaussian process.
-
-        Parameters
-        ----------
-        gamma : float
-            The gamma parameters fixing the variance of the kernel. 
-            Larger values of gamma determines bigger magnitude of the causal mechanisms.
-        """
         self.rbf = PairwiseKernel(gamma=gamma, metric="rbf")
 
 
@@ -191,7 +210,7 @@ class GaussianProcessMechanism(PredictionModel):
         Returns
         -------
         effect: NDArray of shape (num_samples)
-            Causal effect sampled from the gaussina process with
+            Causal effect sampled from the gaussian process with
             covariance matrix given by the RBF kernel with X as input.
         """
         num_samples = X.shape[0]
@@ -206,7 +225,11 @@ class GaussianProcessMechanism(PredictionModel):
 
 # Base class for PostnonLinearModel invertible functions
 class InvertibleFunction():
-    """Invertible functions for the post-nonlinear model abstract class. 
+    """Invertible functions for the post-nonlinear model abstract class.
+    
+    This class can be used to define the invertible transformation for the 
+    structural equations of a PostNonlinear model. In order to instantiate
+    an InvertibleFunction, simply pass 
 
     Parameters
     ----------

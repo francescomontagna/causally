@@ -33,20 +33,6 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         the base class RandomNoiseDistribution, or a torch Distribution.
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
-
-    Attributes
-    ----------
-    adjacency : NDArray of shape (num_nodes, num_nodes) 
-        Matrix rerpesentation of the causal graph. A[i, j] = 1 encodes a directed
-        edge from node i to node j, whereas zero entris correspond to no edges.
-    noise : NDArray of shape (num_samples, num_nodes)
-        Samples of the noise terms.
-    self.misspecifications: Dict[str, SCMProperty]
-        Dictionary of SCM properties violating common assumptions.
-        The key is a string serving as identifier of the model violation (e.g. 'confounded')
-        Valid misspecifications are measurement error, autoregressive effect,
-        unfaithful path cancelling and presence of latent confounders.
-
     """
     def __init__(
         self, 
@@ -75,10 +61,16 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     def add_misspecificed_property(self, property: SCMProperty):
         """Specify misspecification to the SCM, e.g. presence of latent confounders.
 
+        Misspecifications are defined as instance of an SCMProperty, and define a
+        modelling assumption on the SCM. 
+
         Parameters
         ----------
         property: SCMProperty
-            Model misspecification
+            The class containig information on the SCM assumption to add.
+            E.g. `property = ConfoundedModel(p_confounder=0.2)` defines 
+            a structural causal model where each pair has a latent common
+            cause with probability 0.2.
         """
         self.misspecifications[property.identifier] = property
 
@@ -86,13 +78,6 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     def sample(self) -> Tuple[NDArray, NDArray]:
         """
         Sample a dataset of observations.
-
-        Parameters
-        ----------
-        violations: List[str]
-            The list of violations to be modeled. Elements in the list are chosen from
-            {'confounded', 'unfaithful', 'autoregressive', 'measurement error'}, the order of
-            the list doesn't matter.
 
         Returns
         -------
@@ -154,10 +139,19 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
     
     Parameters
     ----------
+    num_samples : int:
+        Number of samples in the dataset
+    graph_generator : GraphGenerator
+        Random graph generator implementing the 'get_random_graph' method. 
+    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+        Sampler of the noise terms. It can be either a custom implementation of 
+        the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a `predict` method.
+    seed : int, default None
+        Seed for reproducibility. If None, then random seed not set.
     """
     def __init__(
         self,
@@ -181,12 +175,21 @@ class PostNonlinearModel(AdditiveNoiseModel):
     
     Parameters
     ----------
+    num_samples : int:
+        Number of samples in the dataset
+    graph_generator : GraphGenerator
+        Random graph generator implementing the 'get_random_graph' method. 
+    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+        Sampler of the noise terms. It can be either a custom implementation of 
+        the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a `predict` method.
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity. Invertibility required for identifiability.
+    seed : int, default None
+        Seed for reproducibility. If None, then random seed not set.
     """
     def __init__(
         self,
@@ -241,6 +244,17 @@ class LinearModel(AdditiveNoiseModel):
     
     Parameters
     ----------
+    num_samples : int:
+        Number of samples in the dataset
+    graph_generator : GraphGenerator
+        Random graph generator implementing the 'get_random_graph' method. 
+    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+        Sampler of the noise terms. It can be either a custom implementation of 
+        the base class RandomNoiseDistribution, or a torch Distribution.
+    causal_mechanism: PredictionModel
+        Object for the generation of the nonlinar causal mechanism.
+        The object passed as argument must implement the PredictionModel abstract class,
+        and have a `predict` method.
     min_weight: float, default is -1
         Minimum value of causal mechanisms weights
     max_weight: float, default is 1
@@ -248,6 +262,8 @@ class LinearModel(AdditiveNoiseModel):
     min_abs_weight: float, default is 0.05
         Minimum value of the absolute value of any causal mechanism weight.
         Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
+    seed : int, default None
+        Seed for reproducibility. If None, then random seed not set.
     """
     def __init__(
         self,
@@ -270,6 +286,13 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
 
     Parameters
     ----------
+    num_samples : int:
+        Number of samples in the dataset
+    graph_generator : GraphGenerator
+        Random graph generator implementing the 'get_random_graph' method. 
+    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+        Sampler of the noise terms. It can be either a custom implementation of 
+        the base class RandomNoiseDistribution, or a torch Distribution.
     linear_mechanism: PredictionModel
         Object for the generation of the linear causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
@@ -286,8 +309,9 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
         E.g. for `linear_fraction = 0.5` data are generated from an SCM with half of the
         structural equations with linear causal mechanisms. Be aware that linear mechanisms
         are not identifiable in case of additive noise term.
+    seed : int, default None
+        Seed for reproducibility. If None, then random seed not set.
     """
-
     def __init__(
         self,
         num_samples: int,

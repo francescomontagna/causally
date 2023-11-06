@@ -16,6 +16,20 @@ class GraphGenerator(metaclass=ABCMeta):
 
     @abstractmethod
     def get_random_graph(self, seed: Optional[int]):
+        """Sample the random directed acyclic graph (DAG). 
+
+        Parameters
+        ----------
+        seed: Optional[int], default None
+            The random seed for the graph generation.
+
+        Returns
+        -------
+        A: NDArray
+            Adjacency matrix representation of the output DAG.
+            The presence of directed edge from node `i` to node `j`
+            is denoted by `A[i, j] = 1`. Absence of edges is denote by 0.
+        """
         raise NotImplementedError()
 
     def _manual_seed(self, seed: int) -> None:
@@ -37,6 +51,23 @@ class GraphGenerator(metaclass=ABCMeta):
 # Gaussian Random Partition Graphs Generator 
 # ***************************************** #
 class GaussianRandomPartition(GraphGenerator):
+    """
+    Generator of Gaussian Random Partition directed acyclic graphs.
+    
+    Parameters
+    ----------
+    num_nodes : int
+        Number of nodes.
+    p_in : float
+        Probability of edge connection with nodes in the cluster.
+    p_out : float
+        Probability of edge connection with nodes in different clusters.
+    n_clusters : int
+        Number of clusters in the graph.
+    min_cluster_size: int, default 2
+        Minimum number of elements for each cluser.
+    """
+
     def __init__(
         self,
         num_nodes: float,
@@ -45,28 +76,6 @@ class GaussianRandomPartition(GraphGenerator):
         n_clusters: int,
         min_cluster_size: int = 2
     ):
-        """
-        Generator of Gaussian Random Partition directed acyclic graphs.
-        
-        Parameters
-        ----------
-        num_nodes : int
-            Number of nodes.
-        p_in : float
-            Probability of edge connection with nodes in the cluster.
-        p_out : float
-            Probability of edge connection with nodes in different clusters.
-        n_clusters : int
-            Number of clusters in the graph.
-        min_cluster_size: int, default 2
-            Minimum number of elements for each cluser.
-
-        Attributes
-        ----------
-        size_of_clusters : List[int]
-            The size of the graph's clusters. This is randomly sampled from a multinomial
-            distribution with parameters TODO: which paremeters?
-        """
         if num_nodes/n_clusters < min_cluster_size:
             raise ValueError(f"Expected ratio `num_nodes/n_clusters' must be at least {min_cluster_size}"\
                              f" Instead got {num_nodes/n_clusters}. Decrease `n_clusters` or `min_cluster_size`.")
@@ -80,7 +89,7 @@ class GaussianRandomPartition(GraphGenerator):
         self.size_of_clusters = self._sample_cluster_sizes()
 
 
-    def get_random_graph(self, seed: int = None) -> NDArray:
+    def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
         self._manual_seed(seed)
 
         # Initialize with the first cluster and remove it from the list
@@ -156,26 +165,26 @@ class GaussianRandomPartition(GraphGenerator):
 #  Erdos-Rényi Graphs Generator #
 # ***************************** #
 class ErdosRenyi(GraphGenerator):
+    """
+    Generator of Erdos-Renyi directed acyclic graphs.
+
+    This class is a wrapper of `igraph` Erdos-Renyi graph sampler.
+    
+    Parameters
+    ----------
+    num_nodes : int
+        Number of nodes
+    expected_degree : int, default is None
+        Expected degree of each node.
+    p_edge : float, default is None
+        Probability of edge between each pair of nodes.
+    """
     def __init__(
         self,
         num_nodes : int,
         expected_degree : int = None,
         p_edge : float = None
     ):
-        """
-        Generator of Erdos-Renyi directed acyclic graphs.
-
-        This class is a wrapper of `igraph` Erdos-Renyi graph sampler.
-        
-        Parameters
-        ----------
-        num_nodes : int
-            Number of nodes
-        expected_degree : int, default is None
-            Expected degree of each node.
-        p_edge : float, default is None
-            Probability of edge between each pair of nodes.
-        """
         if expected_degree is not None and p_edge is not None:
             raise ValueError("Only one parameter between 'p' and 'expected_degree' can be"\
                              f" provided. Got instead expected_degree={expected_degree}"\
@@ -196,17 +205,6 @@ class ErdosRenyi(GraphGenerator):
 
 
     def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
-        """Sample ER random graph.
-
-        Parameters
-        ----------
-        seed: Optional[int], default is None
-
-        Returns
-        -------
-        A: NDArray
-            Numpy adjacency matrix representing the sampled graph.
-        """
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
 
@@ -228,33 +226,33 @@ class ErdosRenyi(GraphGenerator):
 # Barabasi Albert Graphs Generator #
 # ******************************** #
 class BarabasiAlbert(GraphGenerator):
+    """
+    Generator of Scale Free directed acyclic graphs.
+
+    This class is a wrapper of `igraph` Barabasi graph sampler.
+    
+    Parameters
+    ----------
+    num_nodes : int
+        Number of nodes
+    expected_degree : int
+        Expected degree of each node.
+    preferential_attachment_out: bool, default True
+        Select the preferential attachment strategy. If True,
+        new nodes tend to have incoming edge from existing nodes with high out-degree.
+        Else, new nodes tend to have outcoming edge towards existing nodes with high in-degree.
+    """
     def __init__(
         self,
         num_nodes : int,
         expected_degree : int,
         preferential_attachment_out: bool = True
     ):
-        """
-        Generator of Scale Free directed acyclic graphs.
-
-        This class is a wrapper of `igraph` Barabasi graph sampler.
-        
-        Parameters
-        ----------
-        d : int
-            Number of nodes
-        expected_degree : int
-            Expected degree of each node.
-        preferential_attachment_out: bool, default True
-            Select the preferential attachment strategy. If True,
-            new nodes tend to have incoming edge from existing nodes with high out-degree.
-            Else, new nodes tend to have outcoming edge towards existing nodes with high in-degree.
-        """
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
 
-    def get_random_graph(self, seed: int = None) -> NDArray:
+    def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
         
