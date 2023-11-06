@@ -7,10 +7,10 @@ from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
 from typing import Union, Tuple
 
-from causally.datasets.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
-from causally.datasets.random_graphs import GraphGenerator
-from causally.datasets.random_noises import RandomNoiseDistribution
-from causally.datasets.scm_properties import SCMProperty
+from causally.scm.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
+from causally.graph.random_graphs import GraphGenerator
+from causally.scm.random_noises import RandomNoiseDistribution
+from causally.scm.scm_properties import SCMProperty
 from causally.utils.data import topological_order
 
 # * Base SCM abstract class *

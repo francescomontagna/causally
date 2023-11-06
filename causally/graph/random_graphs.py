@@ -178,7 +178,8 @@ class ErdosRenyi(GraphGenerator):
         """
         if expected_degree is not None and p_edge is not None:
             raise ValueError("Only one parameter between 'p' and 'expected_degree' can be"\
-                             f" provided. Got instead m={expected_degree} and p={p_edge}.")
+                             f" provided. Got instead expected_degree={expected_degree}"\
+                             f"and p_edge={p_edge}.")
         if expected_degree is None and p_edge is None:
             raise ValueError("Please provide a value for one of argument between"\
                              " 'expected_degree' and 'p_edge'.")
@@ -186,7 +187,7 @@ class ErdosRenyi(GraphGenerator):
             raise ValueError("expected value of 'expected_degree' is at least 1."\
                              " Got 0 instead")
         if p_edge is not None and p_edge < 0.1:
-            raise ValueError("expected value of 'expected_degree' is at least 0.1."\
+            raise ValueError("expected value of 'p_edge' is at least 0.1."\
                              f" Got {p_edge} instead")
 
         super().__init__(num_nodes)

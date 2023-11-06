@@ -1,6 +1,5 @@
 """Generation and storage of data for large scale experiments
 """
-
 import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
