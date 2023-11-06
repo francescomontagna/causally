@@ -1,10 +1,23 @@
 API
 ===
 
+Graph generators
+----------------
+
+.. currentmodule:: causally.graph.random_graphs
+.. autosummary::
+   :toctree: generated
+
+   GraphGenerator
+   GaussianRandomPartition
+   ErdosRenyi
+   BarabasiAlbert
+   
+
 Noise distributions
 -------------------
 
-.. currentmodule:: causally.datasets.random_noises
+.. currentmodule:: causally.scm.random_noises
 .. autosummary::
    :toctree: generated
 
@@ -16,7 +29,7 @@ Noise distributions
 Causal mechanisms
 -----------------
 
-.. currentmodule:: causally.datasets.causal_mechanisms
+.. currentmodule:: causally.scm.causal_mechanisms
 .. autosummary::
    :toctree: generated
 
@@ -25,19 +38,6 @@ Causal mechanisms
    NeuralNetMechanism
    GaussianProcessMechanism
    InvertibleFunction
-
-
-Graph generators
-----------------
-
-.. currentmodule:: causally.datasets.random_graphs
-.. autosummary::
-   :toctree: generated
-
-   GraphGenerator
-   GaussianRandomPartition
-   ErdosRenyi
-   BarabasiAlbert
    
 
 SCM properties
@@ -46,7 +46,7 @@ SCM properties
 Causally allows modelling assumptions on the SCM such as presence of latent confounders, 
 unfaithfulness of the data distribution, presence of measurement errors and time structure.
 
-.. currentmodule:: causally.datasets.scm_properties
+.. currentmodule:: causally.scm.scm_properties
 .. autosummary::
    :toctree: generated
 
@@ -62,7 +62,7 @@ Causally implements linear, additive nonlinear, postnonliner structural causal m
 Additionally, it allows data generation from SCM with linear and nonlinear structural
 equations.
 
-.. currentmodule:: causally.datasets.scm
+.. currentmodule:: causally.scm.scm
 .. autosummary::
    :toctree: generated
 

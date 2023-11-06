@@ -1,5 +1,6 @@
-from causally import datasets
+from causally import scm, graph
 
 __all__ = [
-    "datasets"
+    "scm",
+    "graph"
 ]
