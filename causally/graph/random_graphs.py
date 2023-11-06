@@ -27,8 +27,8 @@ class GraphGenerator(metaclass=ABCMeta):
         -------
         A: NDArray
             Adjacency matrix representation of the output DAG.
-            The presence of directed edge from node `i` to node `j`
-            is denoted by `A[i, j] = 1`. Absence of edges is denote by 0.
+            The presence of directed edge from node ``i`` to node ``j``
+            is denoted by ``A[i, j] = 1``. Absence of edges is denote by 0.
         """
         raise NotImplementedError()
 
@@ -77,8 +77,8 @@ class GaussianRandomPartition(GraphGenerator):
         min_cluster_size: int = 2
     ):
         if num_nodes/n_clusters < min_cluster_size:
-            raise ValueError(f"Expected ratio `num_nodes/n_clusters' must be at least {min_cluster_size}"\
-                             f" Instead got {num_nodes/n_clusters}. Decrease `n_clusters` or `min_cluster_size`.")
+            raise ValueError(f"Expected ratio ``num_nodes/n_clusters' must be at least {min_cluster_size}"\
+                             f" Instead got {num_nodes/n_clusters}. Decrease ``n_clusters`` or ``min_cluster_size``.")
                              
 
         super().__init__(num_nodes)
@@ -132,7 +132,7 @@ class GaussianRandomPartition(GraphGenerator):
 
     def _disjoint_union(self, A: NDArray, c_size: int) -> NDArray:
         """
-        Merge adjacency A with cluster of size `c_size` nodes into a DAG.
+        Merge adjacency A with cluster of size ``c_size`` nodes into a DAG.
         
         The cluster is sampled from the Erdos-Rényi model. 
         Nodes are labeled with respect to the cluster they belong.
@@ -168,7 +168,7 @@ class ErdosRenyi(GraphGenerator):
     """
     Generator of Erdos-Renyi directed acyclic graphs.
 
-    This class is a wrapper of `igraph` Erdos-Renyi graph sampler.
+    This class is a wrapper of ``igraph`` Erdos-Renyi graph sampler.
     
     Parameters
     ----------
@@ -229,7 +229,7 @@ class BarabasiAlbert(GraphGenerator):
     """
     Generator of Scale Free directed acyclic graphs.
 
-    This class is a wrapper of `igraph` Barabasi graph sampler.
+    This class is a wrapper of ``igraph`` Barabasi graph sampler.
     
     Parameters
     ----------

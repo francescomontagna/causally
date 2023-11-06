@@ -27,7 +27,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     num_samples : int:
         Number of samples in the dataset
     graph_generator : GraphGenerator
-        Random graph generator implementing the 'get_random_graph' method. 
+        Random graph generator implementing the ``get_random_graph`` method. 
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of 
         the base class RandomNoiseDistribution, or a torch Distribution.
@@ -68,7 +68,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         ----------
         property: SCMProperty
             The class containig information on the SCM assumption to add.
-            E.g. `property = ConfoundedModel(p_confounder=0.2)` defines 
+            E.g. ``property = ConfoundedModel(p_confounder=0.2)`` defines 
             a structural causal model where each pair has a latent common
             cause with probability 0.2.
         """
@@ -149,7 +149,7 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
-        and have a `predict` method.
+        and have a ``predict`` method.
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
@@ -185,7 +185,7 @@ class PostNonlinearModel(AdditiveNoiseModel):
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
-        and have a `predict` method.
+        and have a ``predict`` method.
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity. Invertibility required for identifiability.
     seed : int, default None
@@ -215,7 +215,7 @@ class PostNonlinearModel(AdditiveNoiseModel):
             super().add_misspecificed_property(property)
 
     def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
-        """Generate effect given the direct parents `X` and the vector of noise terms.
+        """Generate effect given the direct parents ``X`` and the vector of noise terms.
 
         Parameters
         ----------
@@ -254,7 +254,7 @@ class LinearModel(AdditiveNoiseModel):
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
-        and have a `predict` method.
+        and have a ``predict`` method.
     min_weight: float, default is -1
         Minimum value of causal mechanisms weights
     max_weight: float, default is 1
@@ -296,17 +296,17 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
     linear_mechanism: PredictionModel
         Object for the generation of the linear causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
-        and have a `predict` method.
+        and have a ``predict`` method.
     nonlinear_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
-        and have a `predict` method.
+        and have a ``predict`` method.
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity (not applied to the linear mechanism).
         Invertibility required for identifiability.
     linear_fraction: float, default 0.5
         The fraction of linear mechanisms over the total number of causal relationships.
-        E.g. for `linear_fraction = 0.5` data are generated from an SCM with half of the
+        E.g. for ``linear_fraction = 0.5`` data are generated from an SCM with half of the
         structural equations with linear causal mechanisms. Be aware that linear mechanisms
         are not identifiable in case of additive noise term.
     seed : int, default None

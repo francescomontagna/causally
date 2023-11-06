@@ -45,8 +45,8 @@ class LinearMechanism(PredictionModel):
         # One of max_weight or min_weight must be larger (abs value) than min_abs_weight
         if not(abs(max_weight) > min_abs_weight or abs(min_weight) > min_abs_weight):
             raise ValueError("The range of admitted weights is empty. Please set"\
-                             " one between `min_weight` and `max_weight` with absolute"\
-                             "  value larger than `min_abs_weight`.")
+                             " one between ``min_weight`` and ``max_weight`` with absolute"\
+                             "  value larger than ``min_abs_weight``.")
         
         self.linear_reg = LinearRegression(fit_intercept=False)
         
@@ -98,7 +98,7 @@ class NeuralNetMechanism(PredictionModel):
         Standard deviation of the initialized weights.
     hidden_dim: int, default 10
         Number of neurons in the hidden layer
-    activation: nn.Module, default `nn.PReLU`
+    activation: nn.Module, default ``nn.PReLU``
         The nonlinear activation functin.
     """
     def __init__(
@@ -172,7 +172,7 @@ class NeuralNetMechanism(PredictionModel):
     def model(self):
         """Return the nn.Module instance of the neural network architecture."""
         if self._model is None:
-            raise ValueError("Torch model not initialized. Call `self.predict()` first")
+            raise ValueError("Torch model not initialized. Call ``self.predict()`` first")
         return self._model
 
 

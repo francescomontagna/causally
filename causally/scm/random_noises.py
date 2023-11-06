@@ -106,7 +106,7 @@ class MLPNoise(RandomNoiseDistribution):
     ----------
     hidden_dim: int, default 100
         Number of neurons in the hidden layer.
-    activation: nn.Module, default `nn.Sigmoid`
+    activation: nn.Module, default ``nn.Sigmoid``
         The nonlinear activation functin.
     bias: bool, default True
         If True, include the bias term.

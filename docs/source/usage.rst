@@ -13,7 +13,7 @@ To use Causally, first install it cloning the project via git:
 .. code-block:: console
 
    $ git clone https://github.com/francescomontagna/causally.git
-   $ cd \<path/to/causally\>
+   $ cd 'path/to/causally'
    $ pip install .
 
 For development purposes, install in editable mode (``pip install -e .``)
@@ -130,7 +130,7 @@ for generation according to the following common SCMs:
 
 * Linear model: causal model with linear mechanisms and additive noise terms. 
    .. math:: 
-      X_i := sum_{k \in \operatorname{PA_i}}w_kX_k + N_i
+      X_i := \sum_{k \in \operatorname{PA_i}}w_kX_k + N_i
 where :math:`\operatorname{PA_i}` denotes the set of parents of the node :math:`X_i`, and :math:`N_i` 
 the exogenous random variable for :math:`X_i`.
 
