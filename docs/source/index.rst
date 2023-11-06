@@ -1,5 +1,5 @@
 Welcome to Causally's documentation!
-===================================
+====================================
 
 **Causally** is a Python library for the generation of synthetic benchmarks for causal discovery. 
 Causally allows specifying several properties of the structural causal model generating the data, 
@@ -9,7 +9,7 @@ absence of measurement error, as well as the *i.i.d.* assumption on the observed
 beyond common assumptions in causal discovery that are hardly met in the real-world scenarios of interest.
 
 Check out the :doc:`usage` section for further information, including
-how to :ref:`installation` the project.
+how to :ref:`install <installation>`.
 
 .. note::
 
@@ -19,6 +19,7 @@ Contents
 --------
 
 .. toctree::
+   :maxdepth: 3
 
    usage
    api

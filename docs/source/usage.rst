@@ -6,12 +6,21 @@ Usage
 Installation
 ------------
 
+
 .. What about git clone + pip install . until the library is not completely ready?
-To use Causally, first install it using pip:
+To use Causally, first install it cloning the project via git:
 
 .. code-block:: console
 
-   $ pip install causally
+   $ git clone https://github.com/francescomontagna/causally.git
+   $ cd \<path/to/causally\>
+   $ pip install .
+
+For development purposes, install in editable mode (``pip install -e .``)
+
+.. .. code-block:: console
+
+..    $ pip install causally
 
 
 Graph generation
