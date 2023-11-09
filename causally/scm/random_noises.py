@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 
 
@@ -9,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 class Distribution(metaclass=ABCMeta):
     """Base class to represent noise distributions."""
     @abstractmethod
-    def sample(self, size : tuple[int]) -> NDArray:
+    def sample(self, size : tuple[int]) -> np.array:
         raise NotImplementedError
 
 
@@ -23,7 +22,7 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
         super().__init__()
         self.standardize = standardize
 
-    def sample(self, size : tuple[int]) -> NDArray:
+    def sample(self, size : tuple[int]) -> np.array:
         """Sample random noise of the required input size.
 
         Parameters
@@ -33,7 +32,7 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
         Returns
         -------
-        noise : NDArray of shape (num_samples, num_nodes)
+        noise : np.array of shape (num_samples, num_nodes)
             Sample a random vector of noise terms.
         standardize : bool, default False
             If True, remove empirical mean and normalize deviation to one.
@@ -51,12 +50,12 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
         return noise
     
     
-    def _standardize(self, noise: NDArray) -> NDArray:
+    def _standardize(self, noise: np.array) -> np.array:
         """Remove empirical mean and set empirical variance to one."""
         return (noise - noise.mean())/noise.std()
 
     @abstractmethod
-    def _forward(self, X: NDArray) -> NDArray:
+    def _forward(self, X: np.array) -> np.array:
         """Nonlinear transform of the input noise X."""
         raise NotImplementedError
 
@@ -81,7 +80,7 @@ class Normal(Distribution):
         self.loc = loc
         self.std = std
 
-    def sample(self, size: tuple[int]) -> NDArray:
+    def sample(self, size: tuple[int]) -> np.array:
         """Draw random samples from a Gaussian distribution.
 
         Parameters
@@ -144,7 +143,7 @@ class MLPNoise(RandomNoiseDistribution):
 
 
     @torch.no_grad()
-    def _forward(self, X: NDArray) -> NDArray:
+    def _forward(self, X: np.array) -> np.array:
         if X.ndim != 2:
             raise ValueError(f"Number of dimensions {X.ndim} different from 2."\
              " If input has 1 dimension, consider reshaping it with reshape(-1, 1)")

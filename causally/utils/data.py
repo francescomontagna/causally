@@ -2,7 +2,6 @@
 """
 import networkx as nx
 import numpy as np
-from numpy.typing import NDArray
 
 
 # * Utility functions *
@@ -35,7 +34,7 @@ def max_edges_in_dag(num_nodes: int) -> int:
     return int(num_nodes*(num_nodes-1)/2)
 
 
-def topological_order(adjacency: NDArray):
+def topological_order(adjacency: np.array):
     # DAG test
     if not nx.is_directed_acyclic_graph(nx.from_numpy_array(adjacency, create_using=nx.DiGraph)):
         raise ValueError("The input adjacency matrix is not acyclic.")

@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Callable
-from numpy.typing import NDArray
 from torch import nn, from_numpy
 from abc import ABCMeta, abstractmethod
 from sklearn.gaussian_process.kernels import PairwiseKernel
@@ -12,7 +11,7 @@ from sklearn.linear_model import LinearRegression
 class PredictionModel(metaclass=ABCMeta):
 
     @abstractmethod
-    def predict(self, X: NDArray) -> NDArray:
+    def predict(self, X: np.array) -> np.array:
         raise NotImplementedError
 
 
@@ -51,17 +50,17 @@ class LinearMechanism(PredictionModel):
         self.linear_reg = LinearRegression(fit_intercept=False)
         
     
-    def predict(self, X: NDArray) -> NDArray:
+    def predict(self, X: np.array) -> np.array:
         """Transform X via a linear causal mechanism.
 
         Parameters
         ----------
-        X: NDArray of shape (num_samples, num_parents)
+        X: np.array of shape (num_samples, num_parents)
             Samples of the parents to be transformed by the causal mechanism.
 
         Returns
         -------
-        y: NDArray
+        y: np.array
             The output of the causal mechanism
         """
         if X.ndim != 2:
@@ -118,8 +117,8 @@ class NeuralNetMechanism(PredictionModel):
 
     def predict(
         self, 
-        X: NDArray
-    ) -> NDArray:
+        X: np.array
+    ) -> np.array:
         """Generate the effect given the parents.
 
         The effect is generated as a nonlinear function parametrized by a neural network
@@ -127,12 +126,12 @@ class NeuralNetMechanism(PredictionModel):
 
         Parameters
         ----------
-        X : NDArray of shape (num_samples, num_parents)
+        X : np.array of shape (num_samples, num_parents)
             Input of the neural network with the parent node instances.
 
         Returns
         -------
-        effect: NDArray of shape (num_samples)
+        effect: np.array of shape (num_samples)
             The output of the neural network with X as input.
         """
         n_samples = X.shape[0]
@@ -196,7 +195,7 @@ class GaussianProcessMechanism(PredictionModel):
         self.rbf = PairwiseKernel(gamma=gamma, metric="rbf")
 
 
-    def predict(self, X: NDArray) -> NDArray:
+    def predict(self, X: np.array) -> np.array:
         """Generate the effect given the parents.
 
         The effect is generated as a nonlinear function sampled from a 
@@ -204,12 +203,12 @@ class GaussianProcessMechanism(PredictionModel):
 
         Parameters
         ----------
-        X : NDArray of shape (num_samples, num_parents)
+        X : np.array of shape (num_samples, num_parents)
             Input of the RBF kernel.
 
         Returns
         -------
-        effect: NDArray of shape (num_samples)
+        effect: np.array of shape (num_samples)
             Causal effect sampled from the gaussian process with
             covariance matrix given by the RBF kernel with X as input.
         """
@@ -239,8 +238,8 @@ class InvertibleFunction():
     def __init__(self, function: Callable) -> None:
         self.function = function
     
-    def forward(self, input: NDArray):
+    def forward(self, input: np.array):
         return self.function(input)
     
-    def __call__(self, input: NDArray):
+    def __call__(self, input: np.array):
         return self.forward(input)

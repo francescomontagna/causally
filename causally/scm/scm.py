@@ -2,7 +2,6 @@ import torch
 import random
 import numpy as np
 
-from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
 from typing import Union, Tuple
@@ -75,15 +74,15 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         self.misspecifications[property.identifier] = property
 
 
-    def sample(self) -> Tuple[NDArray, NDArray]:
+    def sample(self) -> Tuple[np.array, np.array]:
         """
         Sample a dataset of observations.
 
         Returns
         -------
-        X : NDArray
+        X : np.array
             Numpy array with the generated dataset.
-        A: NDArray
+        A: np.array
             Numpy adjacency matrix representation of the causal graph.
         """
         adjacency = self.adjacency.copy()
@@ -125,7 +124,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     
 
     @abstractmethod
-    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+    def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         raise NotImplementedError()
 
 
@@ -164,7 +163,7 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
         super().__init__(num_samples, graph_generator, noise_generator, seed)
         self.causal_mechanism = causal_mechanism
 
-    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+    def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         effect = self.causal_mechanism.predict(parents) + child_noise
         return effect
 
@@ -214,19 +213,19 @@ class PostNonlinearModel(AdditiveNoiseModel):
         else:
             super().add_misspecificed_property(property)
 
-    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+    def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         """Generate effect given the direct parents ``X`` and the vector of noise terms.
 
         Parameters
         ----------
-        parents: NDArray of shape (n_samples, n_parents)
+        parents: np.array of shape (n_samples, n_parents)
             Multidimensional array of the parents observataions.
-        child_noise: NDArray of shape(n_samples,)
+        child_noise: np.array of shape(n_samples,)
             Vector of random noise observations of the generated effect.
 
         Returns
         -------
-        effect: NDArray of shape (n_samples,)
+        effect: np.array of shape (n_samples,)
             Vector of the effect observations generated given the parents and the noise.
         """
         anm_effect = super()._sample_mechanism(parents, child_noise)
@@ -327,7 +326,7 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
         self.linear_fraction = linear_fraction
 
         
-    def _sample_mechanism(self, parents: NDArray, child_noise: NDArray) -> NDArray:
+    def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         # Randomly sample the type of mechanism: linear or nonlinear
         linear = np.random.binomial(n=1, p=self.linear_fraction) == 1
 

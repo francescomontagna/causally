@@ -2,7 +2,6 @@ import random
 import igraph as ig
 import numpy as np
 import networkx as nx
-from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 
 from causally.utils.data import max_edges_in_dag
@@ -14,7 +13,7 @@ class GraphGenerator(metaclass=ABCMeta):
         self.num_nodes = num_nodes
 
     @abstractmethod
-    def get_random_graph(self, seed: int) -> NDArray:
+    def get_random_graph(self, seed: int) -> np.array:
         """Sample the random directed acyclic graph (DAG). 
 
         Parameters
@@ -24,7 +23,7 @@ class GraphGenerator(metaclass=ABCMeta):
 
         Returns
         -------
-        A: NDArray
+        A: np.array
             Adjacency matrix representation of the output DAG.
             The presence of directed edge from node ``i`` to node ``j``
             is denoted by ``A[i, j] = 1``. Absence of edges is denote by 0.
@@ -37,7 +36,7 @@ class GraphGenerator(metaclass=ABCMeta):
             np.random.seed(seed)
             random.seed(seed)
     
-    def _make_random_order(self, A: NDArray) -> NDArray:
+    def _make_random_order(self, A: np.array) -> np.array:
         """Randomly permute nodes of A to avoid trivial ordering."""
         n_nodes = A.shape[0]
         permutation = np.random.permutation(range(n_nodes))
@@ -88,7 +87,7 @@ class GaussianRandomPartition(GraphGenerator):
         self.size_of_clusters = self._sample_cluster_sizes()
 
 
-    def get_random_graph(self, seed: int = None) -> NDArray:
+    def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
 
         # Initialize with the first cluster and remove it from the list
@@ -104,7 +103,7 @@ class GaussianRandomPartition(GraphGenerator):
         return A
 
 
-    def _sample_cluster_sizes(self) -> NDArray:
+    def _sample_cluster_sizes(self) -> np.array:
         """Sample the size of each cluset.
 
         The size of the clusters is sampled from a multinomial distribution, 
@@ -122,14 +121,14 @@ class GaussianRandomPartition(GraphGenerator):
         return cluster_sizes
 
 
-    def _sample_er_cluster(self, cluster_size) -> NDArray:
+    def _sample_er_cluster(self, cluster_size) -> np.array:
         """Sample each cluster of GRP graphs with Erdos-Renyi model
         """
         A = ErdosRenyi(num_nodes=cluster_size, p_edge=self.p_in).get_random_graph()
         return A
 
 
-    def _disjoint_union(self, A: NDArray, c_size: int) -> NDArray:
+    def _disjoint_union(self, A: np.array, c_size: int) -> np.array:
         """
         Merge adjacency A with cluster of size ``c_size`` nodes into a DAG.
         
@@ -138,7 +137,7 @@ class GaussianRandomPartition(GraphGenerator):
 
         Parameters
         ----------
-        A : NDArray
+        A : np.array
             Current adjacency matrix
         c_size : int 
             Size of the cluster to generate
@@ -203,7 +202,7 @@ class ErdosRenyi(GraphGenerator):
         self.p_edge = p_edge
 
 
-    def get_random_graph(self, seed: int = None) -> NDArray:
+    def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
 
@@ -251,7 +250,7 @@ class BarabasiAlbert(GraphGenerator):
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
 
-    def get_random_graph(self, seed: int = None) -> NDArray:
+    def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
         

@@ -3,7 +3,6 @@ import numpy as np
 import warnings
 
 from abc import ABCMeta
-from numpy.typing import NDArray
 from typing import Union, List
 
 
@@ -28,17 +27,17 @@ class ConfoundedModel(SCMProperty):
         self.p_confounder = p_confounder
 
 
-    def confound_adjacency(self, adjacency: NDArray):
+    def confound_adjacency(self, adjacency: np.array):
         """Add latent common causes to the input adjacency matrix.
 
         Parameters
         ----------
-        adjacency: NDArray of shape (num_nodes x num_nodes)
+        adjacency: np.array of shape (num_nodes x num_nodes)
             The adjacency matrix without latent confounders.
 
         Returns
         -------
-        confounded_adj: NDArray of shape (2*num_nodes, 2*num_nodes)
+        confounded_adj: np.array of shape (2*num_nodes, 2*num_nodes)
             The adjacency matrix with additional latent confounders.
         """
         num_nodes, _ = adjacency.shape
@@ -67,12 +66,12 @@ class ConfoundedModel(SCMProperty):
         return confounded_adj
     
 
-    def confound_dataset(self, X: NDArray, n_confounders: int):
+    def confound_dataset(self, X: np.array, n_confounders: int):
         """Remove latent confounders observations from the input dataset.
 
         Parameters
         ----------
-        X: NDArray of shape (num_samples, 2*num_nodes)
+        X: np.array of shape (num_samples, 2*num_nodes)
             The dataset with latent confoudners observations. The columns
             corresponding to confounders' observations are the first ``n_confounders``.
         n_confounders: int
@@ -80,7 +79,7 @@ class ConfoundedModel(SCMProperty):
 
         Returns
         -------
-        X: NDArray of shape (num_samples, num_nodes)
+        X: np.array of shape (num_samples, num_nodes)
             The dataset without latent confounders' observations' columns.
         """
         X = X[:, n_confounders:]
@@ -111,15 +110,15 @@ class MeasurementErrorModel(SCMProperty):
         self.gamma = gamma
 
 
-    def add_measure_error(self, X: NDArray):
+    def add_measure_error(self, X: np.array):
         """Add measurement error to the input dataset X.
 
-        X: NDArray of shape (num_samples, num_nodes)
+        X: np.array of shape (num_samples, num_nodes)
             The input dataset without measurement errors
         
         Returns
         -------
-        X: NDArray of shape (num_samples, num_nodes)
+        X: np.array of shape (num_samples, num_nodes)
             The input dataset with measurement error sampled from a zero
             centered gaussian with variance
             
@@ -160,8 +159,8 @@ class UnfaithfulModel(SCMProperty):
 
     def unfaithful_dataset(
         self,
-        X: NDArray,
-        noise: NDArray,
+        X: np.array,
+        noise: np.array,
         unfaithful_triplets_toporder: List[List[int]]
     ):
         """Find cancelled edges and modify X according to the unfathful SCM.
@@ -172,9 +171,9 @@ class UnfaithfulModel(SCMProperty):
         
         Parameters
         ----------
-        X : NDArray of shape (num_samples, num_nodes)
+        X : np.array of shape (num_samples, num_nodes)
             The input matrix of the data without path cancelling.
-        noise: NDArray: of shape (num_samples, num_nodes)
+        noise: np.array: of shape (num_samples, num_nodes)
             Matrix of the SCM additive noise terms.
         unfaithful_triplets_toporder : List[List[int]]
             Represent moralized colliders by their topological order.
@@ -200,7 +199,7 @@ class UnfaithfulModel(SCMProperty):
 
         Parameters
         ----------
-        adjacency: NDArray of shape (num_nodes, num_nodes)
+        adjacency: np.array of shape (num_nodes, num_nodes)
             The input adjacency matrix faithful to the data distribution.
 
         Return
@@ -237,11 +236,11 @@ class UnfaithfulModel(SCMProperty):
         return unfaithful_adj, unfaithful_triplets_toporder
 
 
-    def _is_a_collider(self, A: NDArray, p1: int, p2: int, c: int):
+    def _is_a_collider(self, A: np.array, p1: int, p2: int, c: int):
         """
         Paramaters
         ----------
-        A : NDArray
+        A : np.array
             Adj. matrix with potential collider
         p1 : int
             First parent of the potential collider
@@ -260,7 +259,7 @@ class UnfaithfulModel(SCMProperty):
 
         Parameters
         ----------
-        adjacency: NDArray of shape (num_nodes, num_nodes)
+        adjacency: np.array of shape (num_nodes, num_nodes)
             The input adjacency matrix faithful to the data distribution.
 
         Return
@@ -319,7 +318,7 @@ class AutoregressiveModel(SCMProperty):
         self.order = order
 
 
-    def add_time_lag(self, X: NDArray):
+    def add_time_lag(self, X: np.array):
         """Add time effect to the input.
 
         The time effect is added as a liner combination of the prevous ``self.order``
@@ -327,12 +326,12 @@ class AutoregressiveModel(SCMProperty):
 
         Parameters
         ----------
-        X: NDArray of shape (num_samples)
+        X: np.array of shape (num_samples)
             Observations of a random node.
 
         Returns
         -------
-        X: NDArray of shape (num_samples)
+        X: np.array of shape (num_samples)
             Observations of a random node with addition of the time lagged effects.
         """
         if len(X) <= self.order:
