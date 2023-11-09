@@ -8,7 +8,6 @@ Graph generators
 .. autosummary::
    :toctree: generated
 
-   GraphGenerator
    GaussianRandomPartition
    ErdosRenyi
    BarabasiAlbert
@@ -21,9 +20,9 @@ Noise distributions
 .. autosummary::
    :toctree: generated
 
-   Distribution
    RandomNoiseDistribution
    MLPNoise
+   Normal
 
 
 Causal mechanisms
@@ -33,7 +32,6 @@ Causal mechanisms
 .. autosummary::
    :toctree: generated
 
-   PredictionModel
    LinearMechanism
    NeuralNetMechanism
    GaussianProcessMechanism
