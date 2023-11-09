@@ -44,8 +44,8 @@ intersphinx_disabled_domains = ['std']
 
 templates_path = ['_templates']
 
-# Exclude the __init__ method from class documentation
-autoclass_content = 'class'
+autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance', 'inherited-members']
+
 
 # -- Options for HTML output
 

@@ -2,7 +2,6 @@ import random
 import igraph as ig
 import numpy as np
 import networkx as nx
-from typing import Optional
 from numpy.typing import NDArray
 from abc import ABCMeta, abstractmethod
 
@@ -15,12 +14,12 @@ class GraphGenerator(metaclass=ABCMeta):
         self.num_nodes = num_nodes
 
     @abstractmethod
-    def get_random_graph(self, seed: Optional[int]):
+    def get_random_graph(self, seed: int) -> NDArray:
         """Sample the random directed acyclic graph (DAG). 
 
         Parameters
         ----------
-        seed: Optional[int], default None
+        seed: int, default None
             The random seed for the graph generation.
 
         Returns
@@ -89,7 +88,7 @@ class GaussianRandomPartition(GraphGenerator):
         self.size_of_clusters = self._sample_cluster_sizes()
 
 
-    def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
+    def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
 
         # Initialize with the first cluster and remove it from the list
@@ -204,7 +203,7 @@ class ErdosRenyi(GraphGenerator):
         self.p_edge = p_edge
 
 
-    def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
+    def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
 
@@ -252,7 +251,7 @@ class BarabasiAlbert(GraphGenerator):
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
 
-    def get_random_graph(self, seed: Optional[int] = None) -> NDArray:
+    def get_random_graph(self, seed: int = None) -> NDArray:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
         
