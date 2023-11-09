@@ -12,12 +12,6 @@ Graph generators
    ErdosRenyi
    BarabasiAlbert
 
-.. automethod:: causally.graph.random_graphs.GaussianRandomPartition.__init__
-   :noindex:
-.. automethod:: causally.graph.random_graphs.ErdosRenyi.__init__
-   :noindex:
-.. automethod:: causally.graph.random_graphs.BarabasiAlbert.__init__
-   :noindex:
 
 Noise distributions
 -------------------
