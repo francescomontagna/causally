@@ -6,7 +6,6 @@ from sklearn.gaussian_process.kernels import PairwiseKernel
 from sklearn.linear_model import LinearRegression
 
 
-
 # Base class for causal mechanism generation
 class PredictionModel(metaclass=ABCMeta):
 

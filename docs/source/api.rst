@@ -28,7 +28,7 @@ Noise distributions
 Causal mechanisms
 -----------------
 
-.. currentmodule:: causally.scm.causal_mechanisms
+.. currentmodule:: causally.scm.causal_mechanism
 .. autosummary::
    :toctree: generated/
 
@@ -44,7 +44,7 @@ SCM properties
 Causally allows modelling assumptions on the SCM such as presence of latent confounders, 
 unfaithfulness of the data distribution, presence of measurement errors and time structure.
 
-.. currentmodule:: causally.scm.scm_properties
+.. currentmodule:: causally.scm.scm_property
 .. autosummary::
    :toctree: generated/
 

@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 from causally.graph.random_graph import ErdosRenyi
-from causally.scm.scm_properties import ConfoundedModel, UnfaithfulModel
+from causally.scm.scm_property import ConfoundedModel, UnfaithfulModel
 
 SEED = 42
 np.random.seed(SEED)

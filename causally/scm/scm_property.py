@@ -62,7 +62,6 @@ class ConfoundedModel(SCMProperty):
         confounded_adj = np.hstack((np.zeros(confounded_adj.shape), confounded_adj))
         
         # TODO: test if confounded_adj is uppertriangular. 
-
         return confounded_adj
     
 
@@ -83,6 +82,9 @@ class ConfoundedModel(SCMProperty):
             The dataset without latent confounders' observations' columns.
         """
         X = X[:, n_confounders:]
+
+        # TODO: unit test output shape
+        return X
 
 
 # * Measurement Error Utilities *
@@ -111,7 +113,7 @@ class MeasurementErrorModel(SCMProperty):
 
 
     def add_measure_error(self, X: np.array):
-        """Add measurement error to the input dataset X.
+        r"""Add measurement error to the input dataset X.
 
         X: np.array of shape (num_samples, num_nodes)
             The input dataset without measurement errors
@@ -136,6 +138,9 @@ class MeasurementErrorModel(SCMProperty):
             error_std = np.sqrt(gamma[node])*X_std[node]
             error_sample = error_std*np.random.standard_normal((n_samples, ))
             X[:, node] += error_sample
+        
+        # TODO: unit test error added on one sample dataset
+        return X
     
 
 
@@ -190,8 +195,8 @@ class UnfaithfulModel(SCMProperty):
                 child_added_noise.append(p2)
                 added_noise[child] = child_added_noise
             
-            # TODO: unit test
-            # assert np.array([p1, child]) in edges_removed
+        # TODO: unit test
+        return X
 
 
     def unfaithful_adjacency(self, adjacency):
@@ -343,4 +348,6 @@ class AutoregressiveModel(SCMProperty):
         for t in range(self.order, len(X)):
             for k in range(self.order):
                 X[t] += linear_coeffs[k]*X[t-k]
+
+        # TODO: unit test time lag added on a dataset with two samples and two nodes.
         return X

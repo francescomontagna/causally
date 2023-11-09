@@ -1,12 +1,14 @@
 Welcome to Causally's documentation!
 ====================================
 
-**Causally** is a Python library for the generation of synthetic benchmarks for causal discovery. 
-Causally allows specifying several properties of the structural causal model generating the data, 
-including violation of common assumptions such as absence of latent confounders, faithfulness of the data distribution,
-absence of measurement error, as well as the *i.i.d.* assumption on the observed data.
-``causally`` data generation suite enables evaluation of causal discovery algorithms in challenging environment,
-beyond common assumptions in causal discovery that are hardly met in the real-world scenarios of interest.
+**Causally** is a Python library for the generation of synthetic benchmarks for causal discovery.
+``causally`` shines when you need flexibility and control on the modelling assumptions of your data.
+You can benchmark your brand new causal discovery algorithm on challenging environments: data 
+can be generated under the presence of latent confounders, measurement errors, autoregressive effects,
+unfaithful path cancelling. Nobody believes that *absence of latent confouders* holds in the real world,
+yet this is commonly assumed by the most prominent methods for causal discovery out there. Algorithms'
+evaluation under challenging and realistic scenarios is crucial to deploy safe and robust models.
+``causally`` enables that: happy causality!
 
 Check out the :doc:`usage` section for further information, including
 how to :ref:`install <installation>`.

@@ -4,7 +4,8 @@ import shutil
 import causally.scm.scm as scm
 import causally.graph.random_graph as rg
 import causally.scm.noise as noise 
-import causally.scm.causal_mechanisms as cm
+import causally.scm.causal_mechanism as cm
+import causally.scm.scm_property as scm_property
 
 from causally.utils.data import generate_and_store_dataset
 
@@ -35,7 +36,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--n_datasets",
-        default=100, 
+        default=10, 
         type=int, 
         help="Number graphs samples in the dataset."
     )
@@ -184,4 +185,10 @@ if __name__ == "__main__":
             raise ValueError("Currently PNL graph generation is not supported. TODO: fix this")
         
 
-        generate_and_store_dataset(data_file, groundtruth_file, model)
+        # generate_and_store_dataset(data_file, groundtruth_file, model)
+        model.make_assumption(scm_property.ConfoundedModel(p_confounder=0.2))
+        # model.make_assumption(scm_property.MeasurementErrorModel(gamma=0.5))
+        model.make_assumption(scm_property.UnfaithfulModel(p_unfaithful=1))
+        dataset, groundtruth = model.sample()
+        print(groundtruth)
+        print(dataset[:5])

@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from causally.scm.causal_mechanisms import LinearMechanism, NeuralNetMechanism
+from causally.scm.causal_mechanism import LinearMechanism, NeuralNetMechanism
 
 # Random seeds for reproducibility
 SEED=42

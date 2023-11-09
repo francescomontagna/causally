@@ -6,10 +6,10 @@ from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
 from typing import Union, Tuple
 
-from causally.scm.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
+from causally.scm.causal_mechanism import PredictionModel, LinearMechanism, InvertibleFunction
 from causally.graph.random_graph import GraphGenerator
 from causally.scm.noise import RandomNoiseDistribution
-from causally.scm.scm_properties import SCMProperty
+from causally.scm.scm_property import SCMProperty
 from causally.utils.data import topological_order
 
 # * Base SCM abstract class *
@@ -45,7 +45,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         self.num_samples = num_samples
         self.adjacency = graph_generator.get_random_graph()
         self.noise_generator = noise_generator
-        self.misspecifications = dict()
+        self.assumptions = dict()
 
 
     def _set_random_seed(self, seed: int):
@@ -57,10 +57,10 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             random.seed(seed)
 
 
-    def add_misspecificed_property(self, property: SCMProperty):
-        """Specify misspecification to the SCM, e.g. presence of latent confounders.
+    def make_assumption(self, property: SCMProperty):
+        """Make an assumption on SCM, e.g. presence of latent confounders.
 
-        Misspecifications are defined as instance of an SCMProperty, and define a
+        Assumptions are defined as instance of an SCMProperty, and define a
         modelling assumption on the SCM. 
 
         Parameters
@@ -71,7 +71,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             a structural causal model where each pair has a latent common
             cause with probability 0.2.
         """
-        self.misspecifications[property.identifier] = property
+        self.assumptions[property.identifier] = property
 
 
     def sample(self) -> Tuple[np.array, np.array]:
@@ -88,11 +88,11 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         adjacency = self.adjacency.copy()
 
         # Pre-process: graph misspecification
-        # TODO: very bad, Python compiler does not know self.misspecifications["confounded"] is ConfoundedModel instance
-        if "confounded" in list(self.misspecifications.keys()):
-            adjacency = self.misspecifications["confounded"].confound_adjacency(adjacency)
-        if "unfaithful" in list(self.misspecifications.keys()):
-            adjacency, unfaithful_triplets_order = self.misspecifications["unfaithful"].unfaithful_adjacency(adjacency)
+        # TODO: very bad, Python compiler does not know self.assumptions["confounded"] is ConfoundedModel instance
+        if "confounded" in list(self.assumptions.keys()):
+            adjacency = self.assumptions["confounded"].confound_adjacency(adjacency)
+        if "unfaithful" in list(self.assumptions.keys()):
+            adjacency, unfaithful_triplets_order = self.assumptions["unfaithful"].unfaithful_adjacency(adjacency)
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
@@ -105,18 +105,18 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
                 X[:, i] = self._sample_mechanism(X[:,parents], noise[:, i])
 
                 # Autoregressive effect          
-                if "autoregressive" in list(self.misspecifications.keys()):
-                    X[:, i] = self.misspecifications["autoregressive"].add_time_lag(X[:, i])
+                if "autoregressive" in list(self.assumptions.keys()):
+                    X[:, i] = self.assumptions["autoregressive"].add_time_lag(X[:, i])
 
 
         # Post-process: data misspecification
-        if "measurement error" in  list(self.misspecifications.keys()):
-            self.misspecifications["measurement error"].add_measure_error(X)
-        if "confounded" in list(self.misspecifications.keys()):
+        if "measurement error" in  list(self.assumptions.keys()):
+            X = self.assumptions["measurement error"].add_measure_error(X)
+        if "confounded" in list(self.assumptions.keys()):
             d, _ = self.adjacency.shape
-            self.misspecifications["confounded"].confound_dataset(X, n_confounders=d)
-        if "unfaithful" in list(self.misspecifications.keys()):
-            self.misspecifications["unfaithful"].unfaithful_dataset(
+            X = self.assumptions["confounded"].confound_dataset(X, n_confounders=d)
+        if "unfaithful" in list(self.assumptions.keys()):
+            X = self.assumptions["unfaithful"].unfaithful_dataset(
                 X, noise, unfaithful_triplets_order
             )
 
