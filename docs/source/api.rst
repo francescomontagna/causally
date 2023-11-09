@@ -4,7 +4,7 @@ API
 Graph generators
 ----------------
 
-.. currentmodule:: causally.graph.random_graphs
+.. currentmodule:: causally.graph.random_graph
 .. autosummary::
    :toctree: generated/
    
@@ -16,7 +16,7 @@ Graph generators
 Noise distributions
 -------------------
 
-.. currentmodule:: causally.scm.random_noises
+.. currentmodule:: causally.scm.noise
 .. autosummary::
    :toctree: generated/
 

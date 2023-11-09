@@ -2,8 +2,8 @@ import torch
 import numpy as np
 from causally.scm.scm import LinearModel, AdditiveNoiseModel, PostNonlinearModel
 from causally.scm.causal_mechanisms import LinearMechanism, NeuralNetMechanism, GaussianProcessMechanism
-from causally.graph.random_graphs import ErdosRenyi
-from causally.scm.random_noises import Normal
+from causally.graph.random_graph import ErdosRenyi
+from causally.scm.noise import Normal
 
 # Random seeds for reproducibility
 SEED=42

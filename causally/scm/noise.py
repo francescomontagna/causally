@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from typing import Union
 from abc import ABCMeta, abstractmethod
 
 
@@ -62,19 +63,19 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
 # *** Wrappers of numpy distributions *** #
 class Normal(Distribution):
-    """Wrapper for np.random.Generator.normal() sampler.
+    """Wrapper for np.random.normal() sampler.
 
     Parameters
     ----------
-    loc: float, default 0
+    loc: Union[float, np.array of floats], default 0
         The mean of the sample.
-    std: float, default 1
+    std: Union[float, np.array of floats], default 1
         The standard deviation of the sample.
     """
     def __init__(
             self,
-            loc : float=0.,
-            std: float=1.
+            loc : Union[float, np.array]=0.,
+            std: Union[float, np.array]=1.
     ):
         super().__init__()
         self.loc = loc
@@ -91,6 +92,70 @@ class Normal(Distribution):
         if len(size) != 2:
             ValueError(f"Expected number of input dimensions is 2, but were given {len(size)}.")
         return np.random.normal(self.loc, self.std, size)
+    
+
+class Exponential(Distribution):
+    r"""Wrapper for np.random.exponential() sampler.
+
+    Parameters
+    ----------
+    scale: Union[float, np.array of floats], default 1
+        The scale parameter :math:`\beta = \frac{1}{\lambda}`, must be non-negative.
+    """
+    def __init__(
+            self,
+            scale: Union[float, np.array]=1.
+    ):
+        super().__init__()
+        self.scale = scale
+
+    def sample(self, size: tuple[int]) -> np.array:
+        """Draw random samples from an exponential distribution.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Required shape of the random sample.
+        """
+        if len(size) != 2:
+            ValueError(f"Expected number of input dimensions is 2, but were given {len(size)}.")
+        return np.random.exponential(self.scale, size)
+
+
+class Uniform(Distribution):
+    r"""Wrapper for np.random.uniform() sampler.
+
+    Parameters
+    ----------
+    low: Union[float, np.array of floats], default 0
+        Lower boundary of the output interval. All values generated will be greater than
+        or equal to low. The default value is 0.
+    high: Union[float, np.array of floats], default 1
+        Upper boundary of the output interval. All values generated will be less than or
+        equal to high. The high limit may be included in the returned array of floats due
+        to floating-point rounding in the equation ``low + (high-low) * random_sample()``.
+        The default value is 1.0.
+    """
+    def __init__(
+        self,
+        low: Union[float, np.array]=0.,
+        high: Union[float, np.array]=0.
+    ):
+        super().__init__()
+        self.low = low
+        self.high = high
+
+    def sample(self, size: tuple[int]) -> np.array:
+        """Draw random samples from a uniform distribution.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Required shape of the random sample.
+        """
+        if len(size) != 2:
+            ValueError(f"Expected number of input dimensions is 2, but were given {len(size)}.")
+        return np.random.uniform(self.low, self.high, size)
 
 
 # *** MLP transformation of standard normal *** #

@@ -3,7 +3,7 @@ import math
 import numpy as np
 import networkx as nx
 
-from causally.graph.random_graphs import ErdosRenyi, BarabasiAlbert, GaussianRandomPartition
+from causally.graph.random_graph import ErdosRenyi, BarabasiAlbert, GaussianRandomPartition
 
 seed = 42
 random.seed(seed)

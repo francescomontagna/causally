@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from causally.scm.random_noises import MLPNoise, Normal
+from causally.scm.noise import MLPNoise, Normal
 
 SEED=42
 torch.random.manual_seed(SEED)

@@ -7,8 +7,8 @@ from torch.distributions.distribution import Distribution
 from typing import Union, Tuple
 
 from causally.scm.causal_mechanisms import PredictionModel, LinearMechanism, InvertibleFunction
-from causally.graph.random_graphs import GraphGenerator
-from causally.scm.random_noises import RandomNoiseDistribution
+from causally.graph.random_graph import GraphGenerator
+from causally.scm.noise import RandomNoiseDistribution
 from causally.scm.scm_properties import SCMProperty
 from causally.utils.data import topological_order
 

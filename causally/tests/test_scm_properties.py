@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-from causally.graph.random_graphs import ErdosRenyi
+from causally.graph.random_graph import ErdosRenyi
 from causally.scm.scm_properties import ConfoundedModel, UnfaithfulModel
 
 SEED = 42

@@ -2,8 +2,8 @@ import argparse
 import os
 import shutil
 import causally.scm.scm as scm
-import causally.graph.random_graphs as rg
-import causally.scm.random_noises as rn 
+import causally.graph.random_graph as rg
+import causally.scm.noise as noise 
 import causally.scm.causal_mechanisms as cm
 
 from causally.utils.data import generate_and_store_dataset
@@ -133,9 +133,9 @@ if __name__ == "__main__":
         # Noise generator
         if args.noise_distr == 'gauss':
             # Sample noise on CPU to avoid NaN (PyTorch bug: https://discuss.pytorch.org/t/why-am-i-getting-a-nan-in-normal-mu-std-rsample/117401/8)
-            noise_generator = rn.Normal(0, 1)
+            noise_generator = noise.Normal(0, 1)
         elif args.noise_distr == "nn":
-            noise_generator = rn.MLPNoise()
+            noise_generator = noise.MLPNoise()
         else:
             raise ValueError(f"Unsupported noise type {args.noise_distr}.")
 
