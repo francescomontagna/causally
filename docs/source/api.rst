@@ -6,19 +6,25 @@ Graph generators
 
 .. currentmodule:: causally.graph.random_graphs
 .. autosummary::
-   :toctree: generated
-
+   :toctree: generated/
+   
    GaussianRandomPartition
    ErdosRenyi
    BarabasiAlbert
-   
+
+.. automethod:: causally.graph.random_graphs.GaussianRandomPartition.__init__
+   :noindex:
+.. automethod:: causally.graph.random_graphs.ErdosRenyi.__init__
+   :noindex:
+.. automethod:: causally.graph.random_graphs.BarabasiAlbert.__init__
+   :noindex:
 
 Noise distributions
 -------------------
 
 .. currentmodule:: causally.scm.random_noises
 .. autosummary::
-   :toctree: generated
+   :toctree: generated/
 
    RandomNoiseDistribution
    MLPNoise
@@ -30,7 +36,7 @@ Causal mechanisms
 
 .. currentmodule:: causally.scm.causal_mechanisms
 .. autosummary::
-   :toctree: generated
+   :toctree: generated/
 
    LinearMechanism
    NeuralNetMechanism
@@ -46,7 +52,7 @@ unfaithfulness of the data distribution, presence of measurement errors and time
 
 .. currentmodule:: causally.scm.scm_properties
 .. autosummary::
-   :toctree: generated
+   :toctree: generated/
 
    ConfoundedModel
    MeasurementErrorModel
@@ -62,7 +68,7 @@ equations.
 
 .. currentmodule:: causally.scm.scm
 .. autosummary::
-   :toctree: generated
+   :toctree: generated/
 
    BaseStructuralCausalModel
    AdditiveNoiseModel
