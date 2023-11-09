@@ -124,7 +124,7 @@ class MeasurementErrorModel(SCMProperty):
             centered gaussian with variance
             
             .. math::
-            \operatorname{Var}(\operatorname{error})} = \gamma*{\operatorname{Var}(\operatorname{signal})}
+              \operatorname{Var}(\operatorname{error})} = \gamma*{\operatorname{Var}(\operatorname{signal})}
         """
         n_samples, n_nodes = X.shape
         if not isinstance(self.gamma, list):
@@ -326,6 +326,7 @@ class AutoregressiveModel(SCMProperty):
         observations of the variable ``X``.
 
         Parameters
+        ----------
         X: NDArray of shape (num_samples)
             Observations of a random node.
 
