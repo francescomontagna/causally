@@ -49,7 +49,6 @@ class _ConfoundedMixin:
         confounded_adj = np.vstack((confounders_matrix, adjacency))
         confounded_adj = np.hstack((np.zeros(confounded_adj.shape), confounded_adj))
         
-        # TODO: test if confounded_adj is uppertriangular. 
         return confounded_adj
     
 
@@ -72,7 +71,6 @@ class _ConfoundedMixin:
         """
         X = X[:, n_confounders:]
 
-        # TODO: unit test output shape
         return X
 
 

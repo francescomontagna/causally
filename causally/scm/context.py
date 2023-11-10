@@ -34,12 +34,8 @@ class MeasurementErrorModel(Context):
     Parameters
     ----------
     gamma: Union[float, List[float]] 
-        The inverse signal to noise ratio
-
-        .. math::
-
-        \\frac{\\operatorname{Var}(\\operatorname{error})}{\\operatorname{Var}(\\operatorname{signal})}
-
+        The inverse signal to noise ratio 
+        :math:`\gamma := \frac{\operatorname{Var}(\operatorname{error})}{\operatorname{Var}(\operatorname{signal})}`\
         parametrizing the variance of the measurement error proportionally to the
         variance of the signal. If a single float is provided, then gamma is the
         same for each column of the data matrix. Else, gamma is a vector of shape
@@ -56,11 +52,9 @@ class MeasurementErrorModel(Context):
 class AutoregressiveModel(Context):
     r"""Class storing information for data generation with time lags effects.
 
-    Structural equations take the autoregressive form
+    Structural equations take the following autoregressive form:
 
-    .. math::
-
-    X_i(t):= f_i(\\operatorname{PA}_i(t)) + N_i + \\sum_{k=t-\\operatorname{order}} \\alpha(k)*X_i(k)
+    .. math:: X_i(t):= f_i(\operatorname{PA}_i(t)) + N_i + \sum_{k=t-\operatorname{order}} \alpha(k)*X_i(k)
 
     where :math:`f_i` is the nonlinear causal mechanism,
     :math:`N_i` is the noise term of the structural equation,

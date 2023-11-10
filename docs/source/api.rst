@@ -4,6 +4,8 @@ API
 Graph generators
 ----------------
 
+Classes for generation of random graphs.
+
 .. currentmodule:: causally.graph.random_graph
 .. autosummary::
    :toctree: generated/
@@ -16,6 +18,8 @@ Graph generators
 Noise distributions
 -------------------
 
+Classes for random noise generation according to different parametric and nonparametric distributions.
+
 .. currentmodule:: causally.scm.noise
 .. autosummary::
    :toctree: generated/
@@ -23,10 +27,14 @@ Noise distributions
    RandomNoiseDistribution
    MLPNoise
    Normal
+   Exponential
+   Uniform
 
 
 Causal mechanisms
 -----------------
+
+Causally predefines linear and nonlinear causal mechanisms for the definition of structural equations.
 
 .. currentmodule:: causally.scm.causal_mechanism
 .. autosummary::
@@ -58,7 +66,7 @@ and time structure.
 Structural causal models
 ------------------------
 Causally implements linear, additive nonlinear, postnonliner structural causal models.
-Additionally, it allows data generation from SCM with linear and nonlinear structural
+Additionally, it allows data generation from SCMs with linear and nonlinear structural
 equations.
 
 .. currentmodule:: causally.scm.scm
@@ -69,3 +77,4 @@ equations.
    AdditiveNoiseModel
    LinearModel
    PostNonlinearModel
+   MixedLinearNonlinearModel
