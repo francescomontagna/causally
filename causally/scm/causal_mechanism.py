@@ -238,6 +238,7 @@ class InvertibleFunction():
         self.function = function
     
     def forward(self, input: np.array):
+        """Apply the invertible funciton to the input."""
         return self.function(input)
     
     def __call__(self, input: np.array):

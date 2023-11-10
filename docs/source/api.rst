@@ -38,13 +38,14 @@ Causal mechanisms
    InvertibleFunction
    
 
-SCM properties
---------------
+Challenging assumptions
+-----------------------
 
-Causally allows modelling assumptions on the SCM such as presence of latent confounders, 
-unfaithfulness of the data distribution, presence of measurement errors and time structure.
+Causally allows specifying challenging modelling assumptions on the SCM such as presence of
+latent confounders, unfaithfulness of the data distribution, presence of measurement errors
+and time structure.
 
-.. currentmodule:: causally.scm.scm_property
+.. currentmodule:: causally.scm.context
 .. autosummary::
    :toctree: generated/
 

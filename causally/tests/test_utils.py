@@ -1,5 +1,5 @@
 from numpy.typing import NDArray
-from causally.utils.data import topological_order
+from causally.utils.graph import topological_order
 from causally.graph.random_graph import ErdosRenyi
 
 # * Utilities *

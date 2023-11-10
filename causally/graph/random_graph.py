@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 from abc import ABCMeta, abstractmethod
 
-from causally.utils.data import max_edges_in_dag
+from causally.utils.graph import max_edges_in_dag
 
 
 # Base class

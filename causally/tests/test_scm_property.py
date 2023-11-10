@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 from causally.graph.random_graph import ErdosRenyi
-from causally.scm.scm_property import ConfoundedModel, UnfaithfulModel
+from causally.scm.scm_property import _ConfoundedMixin, _UnfaithfulMixin
 
 SEED = 42
 np.random.seed(SEED)
@@ -11,8 +11,7 @@ random.seed(SEED)
 ###################### Test UnfaithfulModel ######################
 def test_given_fully_connected_matrix_when_model_unfaithful_then_path_cancelling_in_moral_triplets():
     adjacency = np.triu(np.ones((5, 5)), k=1)
-    unfaithful_model = UnfaithfulModel(p_unfaithful=1)
-    unfaithful_adj, _ = unfaithful_model.unfaithful_adjacency(adjacency)
+    unfaithful_adj, _ = _UnfaithfulMixin.unfaithful_adjacency(adjacency, p_unfaithful=1)
 
     target_adj = np.array([
         [0,1,0,0,0],
@@ -30,12 +29,11 @@ def test_given_p_confounded_when_generating_graphs_then_rate_of_confounded_pairs
     num_nodes = 20
     p_edge = 0.4
     graph_generator = ErdosRenyi(num_nodes, p_edge=p_edge)
-    confounder_model = ConfoundedModel(p_confounder)
 
     # sum_confounded_pairs = 0
     for _ in range(10):
         adjacency = graph_generator.get_random_graph()
-        confounded_adj = confounder_model.confound_adjacency(adjacency)
+        confounded_adj = _ConfoundedMixin.confound_adjacency(adjacency)
         confounders_matrix = confounded_adj[num_nodes:, num_nodes:]
         n_direct_confounders = 0
         for confounder in range(num_nodes):

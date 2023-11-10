@@ -4,13 +4,16 @@ import numpy as np
 
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict
 
 from causally.scm.causal_mechanism import PredictionModel, LinearMechanism, InvertibleFunction
 from causally.graph.random_graph import GraphGenerator
 from causally.scm.noise import RandomNoiseDistribution
-from causally.scm.scm_property import SCMProperty
-from causally.utils.data import topological_order
+from causally.scm.scm_property import (
+    _ConfoundedMixin, _MeasurementErrorMixin, _UnfaithfulMixin, _AutoregressiveMixin
+)
+from causally.scm.context import Context
+from causally.utils.graph import topological_order
 
 # * Base SCM abstract class *
 class BaseStructuralCausalModel(metaclass=ABCMeta):
@@ -45,7 +48,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         self.num_samples = num_samples
         self.adjacency = graph_generator.get_random_graph()
         self.noise_generator = noise_generator
-        self.assumptions = dict()
+        self.assumptions: Dict[str, Context] = dict()
 
 
     def _set_random_seed(self, seed: int):
@@ -57,21 +60,21 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             random.seed(seed)
 
 
-    def make_assumption(self, property: SCMProperty):
+    def make_assumption(self, assumption: Context):
         """Make an assumption on SCM, e.g. presence of latent confounders.
 
-        Assumptions are defined as instance of an SCMProperty, and define a
+        Assumptions are defined as instance of Context, and define a
         modelling assumption on the SCM. 
 
         Parameters
         ----------
-        property: SCMProperty
+        assumption: Context
             The class containig information on the SCM assumption to add.
-            E.g. ``property = ConfoundedModel(p_confounder=0.2)`` defines 
+            E.g. ``assumption = ConfoundedModel(p_confounder=0.2)`` defines 
             a structural causal model where each pair has a latent common
             cause with probability 0.2.
         """
-        self.assumptions[property.identifier] = property
+        self.assumptions[assumption.identifier] = assumption
 
 
     def sample(self) -> Tuple[np.array, np.array]:
@@ -87,16 +90,18 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         """
         adjacency = self.adjacency.copy()
 
-        # TODO: very bad, Python compiler does not know self.assumptions["confounded"] is ConfoundedModel instance
-
         # Pre-process: graph misspecification
 
         # TODO: add constraints 
         # i.e. unfaithful must be before confounded to avoid cancelling occurring on confounders matrix
         if "unfaithful" in list(self.assumptions.keys()):
-            adjacency, unfaithful_triplets_order = self.assumptions["unfaithful"].unfaithful_adjacency(adjacency)
+            p_unfaithful = self.assumptions["unfaithful"]
+            adjacency, unfaithful_triplets_order = _UnfaithfulMixin.unfaithful_adjacency(
+                adjacency, p_unfaithful
+            )
         if "confounded" in list(self.assumptions.keys()):
-            adjacency = self.assumptions["confounded"].confound_adjacency(adjacency)
+            p_confounded = self.assumptions["unfaithful"]
+            adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounded)
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
@@ -110,17 +115,19 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
                 # Autoregressive effect          
                 if "autoregressive" in list(self.assumptions.keys()):
-                    X[:, i] = self.assumptions["autoregressive"].add_time_lag(X[:, i])
+                    order = self.assumptions["autoregressive"]
+                    X[:, i] = _AutoregressiveMixin.add_time_lag(X[:, i], order)
 
 
         # Post-process: data misspecification
         if "measurement error" in  list(self.assumptions.keys()):
-            X = self.assumptions["measurement error"].add_measure_error(X)
+            gamma = self.assumptions["measurement error"]
+            X = _MeasurementErrorMixin.add_measure_error(X, gamma)
         if "confounded" in list(self.assumptions.keys()):
             d, _ = self.adjacency.shape
-            X = self.assumptions["confounded"].confound_dataset(X, n_confounders=d)
+            X = _ConfoundedMixin.confound_dataset(X, n_confounders=d)
         if "unfaithful" in list(self.assumptions.keys()):
-            X = self.assumptions["unfaithful"].unfaithful_dataset(
+            X = _UnfaithfulMixin.unfaithful_dataset(
                 X, noise, unfaithful_triplets_order
             )
 
@@ -209,13 +216,13 @@ class PostNonlinearModel(AdditiveNoiseModel):
         self.invertible_function = invertible_function
 
     
-    def add_misspecificed_property(self, property: SCMProperty):
-        if property.identifier == "unfaithful":
+    def make_assumption(self, assumption: Context):
+        if assumption.identifier == "unfaithful":
             raise ValueError("The PostNonlinear model does not support faithfulness violation.")
-        elif property.identifier == "autoregressive":
+        elif assumption.identifier == "autoregressive":
             raise ValueError("The PostNonlinear model does not support autoregressive effects violation.")
         else:
-            super().add_misspecificed_property(property)
+            super().make_assumption(assumption)
 
     def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         """Generate effect given the direct parents ``X`` and the vector of noise terms.

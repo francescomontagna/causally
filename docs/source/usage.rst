@@ -193,14 +193,15 @@ Then, we can define a structural causal model, for example an :py:class:`Additiv
    dataset, groundtruth = model.sample()
 
    
-SCM assumptions
----------------
+Challenging assumptions
+-----------------------
 The key feature of ``causally`` is its flexibility in specifying the assumptions of the structural causal model.
 In particular, it allows to generate data that violates some of the most common assumptions of causal discovery
 algorithms, such as faithfulness of the distribution, or absence of latent confounders.
 
-In order to specify your modelling assumptions, you need to instantiate an :py:class:`SCMProperty`, and 
-pass it as an argument to the class method :py:meth:`causlly.scm_property.SCMProperty.make_assumption`. As simple as that!
+In order to specify your modelling assumptions, you need to instantiate a :py:class:`Context` object, and 
+pass it as an argument to the class method :py:meth:`causally.scm.BaseStructuralCausalModel.make_assumption`.
+As simple as that!
 
 .. code-block:: python
 
@@ -208,7 +209,7 @@ pass it as an argument to the class method :py:meth:`causlly.scm_property.SCMPro
    import causally.graph.random_graph as rg
    import causally.scm.noise as noise 
    import causally.scm.causal_mechanism as cm
-   import causally.scm_property
+   import causally.context
 
    # Erdos-Renyi graph generator
    graph_generator = rg.ErdosRenyi(num_nodes=10, expected_degree=1)
@@ -229,11 +230,11 @@ pass it as an argument to the class method :py:meth:`causlly.scm_property.SCMPro
    )
 
    # Confouded model
-   confounded_model = scm_property.ConfoundedModel()
+   confounded_model = context.ConfoundedModel()
    model.make_assumption(confounded_model)
 
    # Unfaithful distribution
-   unfaithful_model = scm_property.UnfaithfulModel()
+   unfaithful_model = context.UnfaithfulModel()
    model.make_assumption(unfaithful_model)
 
    # Sample from the model
