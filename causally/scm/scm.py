@@ -87,12 +87,16 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         """
         adjacency = self.adjacency.copy()
 
-        # Pre-process: graph misspecification
         # TODO: very bad, Python compiler does not know self.assumptions["confounded"] is ConfoundedModel instance
-        if "confounded" in list(self.assumptions.keys()):
-            adjacency = self.assumptions["confounded"].confound_adjacency(adjacency)
+
+        # Pre-process: graph misspecification
+
+        # TODO: add constraints 
+        # i.e. unfaithful must be before confounded to avoid cancelling occurring on confounders matrix
         if "unfaithful" in list(self.assumptions.keys()):
             adjacency, unfaithful_triplets_order = self.assumptions["unfaithful"].unfaithful_adjacency(adjacency)
+        if "confounded" in list(self.assumptions.keys()):
+            adjacency = self.assumptions["confounded"].confound_adjacency(adjacency)
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))

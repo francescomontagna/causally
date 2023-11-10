@@ -168,11 +168,7 @@ class UnfaithfulModel(SCMProperty):
         noise: np.array,
         unfaithful_triplets_toporder: List[List[int]]
     ):
-        """Find cancelled edges and modify X according to the unfathful SCM.
-
-        Unfaithful edge cancellations are found by comparing faithful_adj and
-        unfaithful_adj matrices. Then, X is post-processed to be distributed 
-        faitfhully with respect to the unfaithful_adj adjacency matrix.
+        """Modify X according to the unfaithful SCM.
         
         Parameters
         ----------
@@ -181,16 +177,16 @@ class UnfaithfulModel(SCMProperty):
         noise: np.array: of shape (num_samples, num_nodes)
             Matrix of the SCM additive noise terms.
         unfaithful_triplets_toporder : List[List[int]]
-            Represent moralized colliders by their topological order.
-            E.g. ``1->0<-2``, ``1->2`` is uniquely represented by ``[1, 2, 0]`` toporder of the triplet.
-            To model unfaithfulness, add ``X_noise[:, 2]`` to ``X[0:, ]``
+            Represent moralized colliders with in unfaithful path cancelling by their causal order.
+            E.g. ``1->0<-2<-1`` is uniquely represented by ``[1, 2, 0]`` topological order of the
+            triplet. To model unfaithfulness, add ``X_noise[:, 2]`` to ``X[0:, ]``
         """
         # edges_removed = np.transpose(np.nonzero(unfaithful_adj - faithful_adj))
-        added_noise = dict()
+        added_noise = dict() 
         for ordered_triplet in unfaithful_triplets_toporder:
             p1, p2, child = ordered_triplet
             child_added_noise = added_noise.get(child, list())
-            if p2 not in child_added_noise:
+            if p2 not in child_added_noise: # Avoid unfaithful effects of p2 on child more than once
                 X[:, child] += noise[:, p2]
                 child_added_noise.append(p2)
                 added_noise[child] = child_added_noise
@@ -229,7 +225,7 @@ class UnfaithfulModel(SCMProperty):
             p1, p2, child = triplet
             # Check if triplet still has collider in unfaithful_adj
             if self._is_a_collider(unfaithful_adj, p1, p2, child) and not((p1, child) in fixed_edges):
-                if np.random.binomial(n=1, p=self.p_unfaithful):
+                if np.random.binomial(n=1, p=self.p_unfaithful) == 1:
                     unfaithful_adj[p1, child] = 0 # remove p1 -> c
                     # Remove all others directed paths from the groundtruth and adj graph
                     unfaithful_triplets_toporder.append(triplet)

@@ -7,7 +7,6 @@ import causally.scm.noise as noise
 import causally.scm.causal_mechanism as cm
 import causally.scm.scm_property as scm_property
 
-from causally.utils.data import generate_and_store_dataset
 
 WORKSPACE = os.path.join(os.getcwd(), "..")
 
@@ -36,7 +35,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--n_datasets",
-        default=10, 
+        default=100, 
         type=int, 
         help="Number graphs samples in the dataset."
     )
@@ -186,9 +185,10 @@ if __name__ == "__main__":
         
 
         # generate_and_store_dataset(data_file, groundtruth_file, model)
+        model.make_assumption(scm_property.AutoregressiveModel(order=1))
         model.make_assumption(scm_property.ConfoundedModel(p_confounder=0.2))
-        # model.make_assumption(scm_property.MeasurementErrorModel(gamma=0.5))
-        model.make_assumption(scm_property.UnfaithfulModel(p_unfaithful=1))
+        model.make_assumption(scm_property.MeasurementErrorModel(gamma=0.5))
+        model.make_assumption(scm_property.UnfaithfulModel(p_unfaithful=0)) # TODO: p_unfaithful=0 changes the output. I think it is for the seed
         dataset, groundtruth = model.sample()
         print(groundtruth)
         print(dataset[:5])

@@ -1,6 +1,7 @@
 # VSCode
 **/*pycache*
 .pytest_cache
+.vscode
 
 # Readme files
 **/readme.txt
