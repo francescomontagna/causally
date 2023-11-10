@@ -78,7 +78,6 @@ class _ConfoundedMixin:
 
 # * Measurement Error Utilities *
 class _MeasurementErrorMixin:
-
     @staticmethod
     def add_measure_error(X: np.array, gamma: Union[float, List[float]]):
         r"""Add measurement error to the input dataset X.

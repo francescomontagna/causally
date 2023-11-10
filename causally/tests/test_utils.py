@@ -1,5 +1,6 @@
+import numpy as np
 from numpy.typing import NDArray
-from causally.utils.graph import topological_order
+from causally.utils.graph import topological_order, find_moral_colliders, is_a_collider
 from causally.graph.random_graph import ErdosRenyi
 
 # * Utilities *
@@ -33,3 +34,12 @@ def test_given_dags_when_running_topological_order_then_order_is_correct():
         pred_order = topological_order(A)
         errors = top_order_errors(A, pred_order)
         assert  errors == 0, "Predicted order not compatible with the groundtruth adjacency."
+
+
+def test_given_dag_with_moral_collider_then_find_moral_collider_finds_it():
+    dag = np.array([
+        [0., 1., 1.],
+        [0., 0., 1.],
+        [0., 0., 0.]
+    ])
+    assert find_moral_colliders(dag)[0] == [0, 1, 2]

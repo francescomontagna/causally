@@ -33,7 +33,7 @@ def test_given_p_confounded_when_generating_graphs_then_rate_of_confounded_pairs
     # sum_confounded_pairs = 0
     for _ in range(10):
         adjacency = graph_generator.get_random_graph()
-        confounded_adj = _ConfoundedMixin.confound_adjacency(adjacency)
+        confounded_adj = _ConfoundedMixin.confound_adjacency(adjacency, p_confounder)
         confounders_matrix = confounded_adj[num_nodes:, num_nodes:]
         n_direct_confounders = 0
         for confounder in range(num_nodes):
@@ -43,3 +43,13 @@ def test_given_p_confounded_when_generating_graphs_then_rate_of_confounded_pairs
         assert abs(n_direct_confounders/number_of_pairs - p_confounder) < 0.05,\
             f"Expected rate of confounders 0.2 +- 0.05, instead got: "\
             f"{abs(n_direct_confounders/number_of_pairs)}"
+        
+
+def test_given_p_confounded_0_then_confounders_matrix_empty():
+    p_confounder = 0.
+    num_nodes = 20
+    p_edge = 0.4
+    graph_generator = ErdosRenyi(num_nodes, p_edge=p_edge)
+    adjacency = graph_generator.get_random_graph()
+    confounded_adj = _ConfoundedMixin.confound_adjacency(adjacency, p_confounder)
+    assert np.sum(confounded_adj[:, :num_nodes]) == 0

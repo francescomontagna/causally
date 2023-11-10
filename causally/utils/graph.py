@@ -73,7 +73,7 @@ def is_a_collider(A: np.array, p1: int, p2: int, c: int):
     return collider_struct
     
 
-def find_moral_colliders(self, adjacency: np.array):
+def find_moral_colliders(adjacency: np.array):
     """Find moral v-structures in the input adjacency matrix.
 
     Parameters
@@ -81,8 +81,8 @@ def find_moral_colliders(self, adjacency: np.array):
     adjacency: np.array of shape (num_nodes, num_nodes)
         The input adjacency matrix faithful to the data distribution.
 
-    Return
-    ------
+    Returns
+    -------
     moral_colliders_toporder : List[List[int]]
         Represent moralized colliders by their topological order.
         E.g. ``1->0<-2``,``1->2``  is uniquely represented by ``[1, 2, 0]`` toporder of the triplet.
