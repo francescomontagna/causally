@@ -508,7 +508,7 @@ def test_grp_min_cluster_size():
 
 
 def test_grp_clusters_er_regular_degree_behaviour():
-    """Check that clusters are approximatively regular graphs."""
+    """Check that clusters are approximately regular graphs."""
     p_in = 0.4
     p_out = 0.04
     nodes_values = [5, 10, 20, 50]

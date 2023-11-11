@@ -147,7 +147,7 @@ the exogenous random variable for :math:`X_i`.
       X_i := f_i(\operatorname{PA_i}) + N_i
 where :math:`f_i` is the nonlinear causal mechanism.
 
-* Post-nonlinar model: causal model with invertible funciton applied to the output of a 
+* Post-nonlinar model: causal model with invertible function applied to the output of a 
   nonlinear additive noise model structural equation.
 
    .. math:: 

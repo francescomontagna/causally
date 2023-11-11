@@ -56,7 +56,7 @@ def topological_order(adjacency: np.array):
 # * For unfaithful generation *
 def is_a_collider(A: np.array, p1: int, p2: int, c: int):
     """
-    Paramaters
+    Parameters
     ----------
     A : np.array
         Adj. matrix with potential collider

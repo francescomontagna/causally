@@ -75,7 +75,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         Parameters
         ----------
         assumption: Context
-            The class containig information on the SCM assumption to add.
+            The class containing information on the SCM assumption to add.
             E.g. ``assumption = ConfoundedModel(p_confounder=0.2)`` defines
             a structural causal model where each pair has a latent common
             cause with probability 0.2.

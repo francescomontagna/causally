@@ -8,7 +8,7 @@ from causally.utils.graph import is_a_collider, find_moral_colliders
 # Collection of mixing classes for data generation under required assumptions
 
 
-# * Confounded model utilites *
+# * Confounded model utilities *
 class _ConfoundedMixin:
     @staticmethod
     def confound_adjacency(adjacency: np.array, p_confounder=float):
@@ -193,7 +193,7 @@ class _AutoregressiveMixin:
     ):
         """Add time effect to the input.
 
-        The time effect is added as a liner combination of the prevous ``order``
+        The time effect is added as a liner combination of the previous ``order``
         observations of the variable ``X``.
 
         Parameters

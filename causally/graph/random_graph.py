@@ -63,7 +63,7 @@ class GaussianRandomPartition(GraphGenerator):
     n_clusters : int
         Number of clusters in the graph.
     min_cluster_size: int, default 2
-        Minimum number of elements for each cluser.
+        Minimum number of elements for each cluster.
     """
 
     def __init__(

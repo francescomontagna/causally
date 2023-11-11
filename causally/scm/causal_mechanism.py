@@ -102,7 +102,7 @@ class NeuralNetMechanism(PredictionModel):
     hidden_dim: int, default 10
         Number of neurons in the hidden layer
     activation: nn.Module, default ``nn.PReLU``
-        The nonlinear activation functin.
+        The nonlinear activation function.
     """
 
     def __init__(
@@ -238,7 +238,7 @@ class InvertibleFunction:
         self.function = function
 
     def forward(self, input: np.array):
-        """Apply the invertible funciton to the input."""
+        """Apply the invertible function to the input."""
         return self.function(input)
 
     def __call__(self, input: np.array):
