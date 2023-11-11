@@ -1,58 +1,59 @@
 API
 ===
 
-.. autosummary::
-   :toctree: generated
+Graph generators
+----------------
 
-   causally
+Classes for generation of random graphs.
+
+.. currentmodule:: causally.graph.random_graph
+.. autosummary::
+   :toctree: generated/
+   
+   GaussianRandomPartition
+   ErdosRenyi
+   BarabasiAlbert
 
 
 Noise distributions
-===================
+-------------------
 
-.. currentmodule:: causally.datasets.random_noises
+Classes for random noise generation according to different parametric and nonparametric distributions.
+
+.. currentmodule:: causally.scm.noise
 .. autosummary::
    :toctree: generated/
 
-   Distribution
    RandomNoiseDistribution
    MLPNoise
+   Normal
+   Exponential
+   Uniform
 
 
 Causal mechanisms
-=================
+-----------------
 
-.. currentmodule:: causally.datasets.causal_mechanisms
+Causally predefines linear and nonlinear causal mechanisms for the definition of structural equations.
+
+.. currentmodule:: causally.scm.causal_mechanism
 .. autosummary::
    :toctree: generated/
 
-   PredictionModel
    LinearMechanism
    NeuralNetMechanism
    GaussianProcessMechanism
    InvertibleFunction
-
-
-Graph generators
-================
-
-.. currentmodule:: causally.datasets.random_graphs
-.. autosummary::
-   :toctree: generated/
-
-   GraphGenerator
-   GaussianRandomPartition
-   ErdosRenyi
-   BarabasiAlbert
    
 
-SCM properties
-===============
+Challenging assumptions
+-----------------------
 
-Causally allows modelling assumptions on the SCM such as presence of latent confounders, 
-unfaithfulness of the data distribution, presence of measurement errors and time structure.
+Causally allows specifying challenging modelling assumptions on the SCM such as presence of
+latent confounders, unfaithfulness of the data distribution, presence of measurement errors
+and time structure.
 
-.. currentmodule:: causally.datasets.scm_properties
+.. currentmodule:: causally.scm.context
 .. autosummary::
    :toctree: generated/
 
@@ -63,12 +64,12 @@ unfaithfulness of the data distribution, presence of measurement errors and time
 
 
 Structural causal models
-========================
+------------------------
 Causally implements linear, additive nonlinear, postnonliner structural causal models.
-Additionally, it allows data generation from SCM with linear and nonlinear structural
+Additionally, it allows data generation from SCMs with linear and nonlinear structural
 equations.
 
-.. currentmodule:: causally.datasets.scm
+.. currentmodule:: causally.scm.scm
 .. autosummary::
    :toctree: generated/
 
@@ -76,3 +77,4 @@ equations.
    AdditiveNoiseModel
    LinearModel
    PostNonlinearModel
+   MixedLinearNonlinearModel

@@ -1,1 +1,3 @@
 Coda base for synthetic data generation  `causally` python library. The code develped in this repository is part of the contributions of the paper "Assumption violations in causal discovery and the robustness of score matching", 2023, Montagna et al., (To appear) NeurIPS 2023.
+
+For ``causally`` documentation,  visit [https://causally.readthedocs.io/en/latest/](https://causally.readthedocs.io/en/latest/).

@@ -6,6 +6,16 @@ import sys
 #Location of Sphinx files
 sys.path.insert(0, os.path.abspath('../..'))
 
+# skip init
+def skip_init(app, what, name, obj, skip, options):
+    if name == "__init__":
+        return True
+    return None
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip_init)
+
+
 # -- Project information
 
 project = 'Causally'
@@ -34,6 +44,9 @@ intersphinx_disabled_domains = ['std']
 
 templates_path = ['_templates']
 
+autodoc_default_flags = ['members', 'undoc-members', 'show-inheritance', 'inherited-members']
+
+
 # -- Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
@@ -41,7 +54,7 @@ html_theme = 'sphinx_rtd_theme'
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
 
-# Napoleon settings (Napoleaon needed to parse Numpy like docstrings)
+# Napoleon settings (Napoleon needed to parse Numpy like docstrings)
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
