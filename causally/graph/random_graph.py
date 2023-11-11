@@ -14,7 +14,7 @@ class GraphGenerator(metaclass=ABCMeta):
 
     @abstractmethod
     def get_random_graph(self, seed: int) -> np.array:
-        """Sample the random directed acyclic graph (DAG). 
+        """Sample the random directed acyclic graph (DAG).
 
         Parameters
         ----------
@@ -35,7 +35,7 @@ class GraphGenerator(metaclass=ABCMeta):
         if seed is not None:
             np.random.seed(seed)
             random.seed(seed)
-    
+
     def _make_random_order(self, A: np.array) -> np.array:
         """Randomly permute nodes of A to avoid trivial ordering."""
         n_nodes = A.shape[0]
@@ -46,12 +46,12 @@ class GraphGenerator(metaclass=ABCMeta):
 
 
 # ***************************************** #
-# Gaussian Random Partition Graphs Generator 
+# Gaussian Random Partition Graphs Generator
 # ***************************************** #
 class GaussianRandomPartition(GraphGenerator):
     """
     Generator of Gaussian Random Partition directed acyclic graphs.
-    
+
     Parameters
     ----------
     num_nodes : int
@@ -72,12 +72,13 @@ class GaussianRandomPartition(GraphGenerator):
         p_in: float,
         p_out: float,
         n_clusters: int,
-        min_cluster_size: int = 2
+        min_cluster_size: int = 2,
     ):
-        if num_nodes/n_clusters < min_cluster_size:
-            raise ValueError(f"Expected ratio ``num_nodes/n_clusters' must be at least {min_cluster_size}"\
-                             f" Instead got {num_nodes/n_clusters}. Decrease ``n_clusters`` or ``min_cluster_size``.")
-                             
+        if num_nodes / n_clusters < min_cluster_size:
+            raise ValueError(
+                f"Expected ratio ``num_nodes/n_clusters' must be at least {min_cluster_size}"
+                f" Instead got {num_nodes/n_clusters}. Decrease ``n_clusters`` or ``min_cluster_size``."
+            )
 
         super().__init__(num_nodes)
         self.p_in = p_in
@@ -85,7 +86,6 @@ class GaussianRandomPartition(GraphGenerator):
         self.n_clusters = n_clusters
         self.min_cluster_size = min_cluster_size
         self.size_of_clusters = self._sample_cluster_sizes()
-
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
@@ -102,15 +102,14 @@ class GaussianRandomPartition(GraphGenerator):
         A = self._make_random_order(A)
         return A
 
-
     def _sample_cluster_sizes(self) -> np.array:
         """Sample the size of each cluset.
 
-        The size of the clusters is sampled from a multinomial distribution, 
+        The size of the clusters is sampled from a multinomial distribution,
         and post-processed to ensure at least 3 nodes per cluster
         """
         cluster_sizes = np.random.multinomial(
-            self.num_nodes, pvals=[1/self.n_clusters for _ in range(self.n_clusters)]
+            self.num_nodes, pvals=[1 / self.n_clusters for _ in range(self.n_clusters)]
         )
         # At least 3 elements per cluster. Take elements from largest to smallest cluster
         while np.min(cluster_sizes) < self.min_cluster_size:
@@ -120,26 +119,23 @@ class GaussianRandomPartition(GraphGenerator):
             cluster_sizes[argmin] += 1
         return cluster_sizes
 
-
     def _sample_er_cluster(self, cluster_size) -> np.array:
-        """Sample each cluster of GRP graphs with Erdos-Renyi model
-        """
+        """Sample each cluster of GRP graphs with Erdos-Renyi model"""
         A = ErdosRenyi(num_nodes=cluster_size, p_edge=self.p_in).get_random_graph()
         return A
-
 
     def _disjoint_union(self, A: np.array, c_size: int) -> np.array:
         """
         Merge adjacency A with cluster of size ``c_size`` nodes into a DAG.
-        
-        The cluster is sampled from the Erdos-Rényi model. 
+
+        The cluster is sampled from the Erdos-Rényi model.
         Nodes are labeled with respect to the cluster they belong.
 
         Parameters
         ----------
         A : np.array
             Current adjacency matrix
-        c_size : int 
+        c_size : int
             Size of the cluster to generate
         """
         # Join the graphs by block matrices
@@ -151,14 +147,14 @@ class GaussianRandomPartition(GraphGenerator):
 
         # Add connections among clusters from A to er_cluster
         for i in range(n):
-            for j in range(n, i+c_size):
+            for j in range(n, i + c_size):
                 if np.random.binomial(n=1, p=self.p_out) == 1:
                     # print(f"edge {(i, j)} between clusters!")
                     A[i, j] = 1
 
         return A
 
-    
+
 # ***************************** #
 #  Erdos-Rényi Graphs Generator #
 # ***************************** #
@@ -167,7 +163,7 @@ class ErdosRenyi(GraphGenerator):
     Generator of Erdos-Renyi directed acyclic graphs.
 
     This class is a wrapper of ``igraph`` Erdos-Renyi graph sampler.
-    
+
     Parameters
     ----------
     num_nodes : int
@@ -177,30 +173,33 @@ class ErdosRenyi(GraphGenerator):
     p_edge : float, default is None
         Probability of edge between each pair of nodes.
     """
+
     def __init__(
-        self,
-        num_nodes : int,
-        expected_degree : int = None,
-        p_edge : float = None
+        self, num_nodes: int, expected_degree: int = None, p_edge: float = None
     ):
         if expected_degree is not None and p_edge is not None:
-            raise ValueError("Only one parameter between 'p' and 'expected_degree' can be"\
-                             f" provided. Got instead expected_degree={expected_degree}"\
-                             f"and p_edge={p_edge}.")
+            raise ValueError(
+                "Only one parameter between 'p' and 'expected_degree' can be"
+                f" provided. Got instead expected_degree={expected_degree}"
+                f"and p_edge={p_edge}."
+            )
         if expected_degree is None and p_edge is None:
-            raise ValueError("Please provide a value for one of argument between"\
-                             " 'expected_degree' and 'p_edge'.")
+            raise ValueError(
+                "Please provide a value for one of argument between"
+                " 'expected_degree' and 'p_edge'."
+            )
         if expected_degree is not None and expected_degree == 0:
-            raise ValueError("expected value of 'expected_degree' is at least 1."\
-                             " Got 0 instead")
+            raise ValueError(
+                "expected value of 'expected_degree' is at least 1." " Got 0 instead"
+            )
         if p_edge is not None and p_edge < 0.1:
-            raise ValueError("expected value of 'p_edge' is at least 0.1."\
-                             f" Got {p_edge} instead")
+            raise ValueError(
+                "expected value of 'p_edge' is at least 0.1." f" Got {p_edge} instead"
+            )
 
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
         self.p_edge = p_edge
-
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
@@ -211,14 +210,16 @@ class ErdosRenyi(GraphGenerator):
             if self.p_edge is not None:
                 undirected_graph = ig.Graph.Erdos_Renyi(n=self.num_nodes, p=self.p_edge)
             elif self.expected_degree is not None:
-                undirected_graph = ig.Graph.Erdos_Renyi(n=self.num_nodes, m=self.expected_degree*self.num_nodes)
+                undirected_graph = ig.Graph.Erdos_Renyi(
+                    n=self.num_nodes, m=self.expected_degree * self.num_nodes
+                )
             undirected_adjacency = ig_to_adjmat(undirected_graph)
             A = acyclic_orientation(undirected_adjacency)
 
         # Permute to avoid trivial ordering
         A = self._make_random_order(A)
         return A
-    
+
 
 # ******************************** #
 # Barabasi Albert Graphs Generator #
@@ -228,7 +229,7 @@ class BarabasiAlbert(GraphGenerator):
     Generator of Scale Free directed acyclic graphs.
 
     This class is a wrapper of ``igraph`` Barabasi graph sampler.
-    
+
     Parameters
     ----------
     num_nodes : int
@@ -240,11 +241,12 @@ class BarabasiAlbert(GraphGenerator):
         new nodes tend to have incoming edge from existing nodes with high out-degree.
         Else, new nodes tend to have outcoming edge towards existing nodes with high in-degree.
     """
+
     def __init__(
         self,
-        num_nodes : int,
-        expected_degree : int,
-        preferential_attachment_out: bool = True
+        num_nodes: int,
+        expected_degree: int,
+        preferential_attachment_out: bool = True,
     ):
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
@@ -253,10 +255,12 @@ class BarabasiAlbert(GraphGenerator):
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
-        
+
         # Ensure at least two edges (one edge if the graph is bivariate)
         while np.sum(A) < min(2, max_edges_in_dag(self.num_nodes)):
-            G = ig.Graph.Barabasi(n=self.num_nodes, m=self.expected_degree, directed=True)
+            G = ig.Graph.Barabasi(
+                n=self.num_nodes, m=self.expected_degree, directed=True
+            )
             A = ig_to_adjmat(G)
             if self.preferential_attachment_out:
                 A = A.transpose(1, 0)
@@ -264,7 +268,6 @@ class BarabasiAlbert(GraphGenerator):
         # Permute to avoid trivial ordering
         A = self._make_random_order(A)
         return A
-        
 
 
 # ********************** #
@@ -273,9 +276,11 @@ class BarabasiAlbert(GraphGenerator):
 def acyclic_orientation(A):
     return np.triu(A, k=1)
 
-def ig_to_adjmat(G : ig.Graph):
+
+def ig_to_adjmat(G: ig.Graph):
     return np.array(G.get_adjacency().data)
 
-def graph_viz(A : np.array):
+
+def graph_viz(A: np.array):
     G = nx.from_numpy_array(A, create_using=nx.DiGraph)
     nx.draw_networkx(G)

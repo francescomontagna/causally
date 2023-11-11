@@ -6,14 +6,22 @@ from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
 from typing import Union, Tuple, Dict
 
-from causally.scm.causal_mechanism import PredictionModel, LinearMechanism, InvertibleFunction
+from causally.scm.causal_mechanism import (
+    PredictionModel,
+    LinearMechanism,
+    InvertibleFunction,
+)
 from causally.graph.random_graph import GraphGenerator
 from causally.scm.noise import RandomNoiseDistribution
 from causally.scm.scm_property import (
-    _ConfoundedMixin, _MeasurementErrorMixin, _UnfaithfulMixin, _AutoregressiveMixin
+    _ConfoundedMixin,
+    _MeasurementErrorMixin,
+    _UnfaithfulMixin,
+    _AutoregressiveMixin,
 )
 from causally.scm.context import Context
 from causally.utils.graph import topological_order
+
 
 # * Base SCM abstract class *
 class BaseStructuralCausalModel(metaclass=ABCMeta):
@@ -29,19 +37,20 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     num_samples : int:
         Number of samples in the dataset
     graph_generator : GraphGenerator
-        Random graph generator implementing the ``get_random_graph`` method. 
+        Random graph generator implementing the ``get_random_graph`` method.
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
-        Sampler of the noise terms. It can be either a custom implementation of 
+        Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
+
     def __init__(
-        self, 
-        num_samples : int, 
-        graph_generator : GraphGenerator,
-        noise_generator :  Union[RandomNoiseDistribution, Distribution],
-        seed: int=None
+        self,
+        num_samples: int,
+        graph_generator: GraphGenerator,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
+        seed: int = None,
     ):
         self._set_random_seed(seed)
 
@@ -50,32 +59,28 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         self.noise_generator = noise_generator
         self.assumptions: Dict[str, Context] = dict()
 
-
     def _set_random_seed(self, seed: int):
-        """Manually set the random seed. If the seed is None, then do nothing.
-        """
+        """Manually set the random seed. If the seed is None, then do nothing."""
         if seed is not None:
             np.random.seed(seed)
             torch.manual_seed(seed)
             random.seed(seed)
 
-
     def make_assumption(self, assumption: Context):
         """Make an assumption on SCM, e.g. presence of latent confounders.
 
         Assumptions are defined as instance of Context, and define a
-        modelling assumption on the SCM. 
+        modelling assumption on the SCM.
 
         Parameters
         ----------
         assumption: Context
             The class containig information on the SCM assumption to add.
-            E.g. ``assumption = ConfoundedModel(p_confounder=0.2)`` defines 
+            E.g. ``assumption = ConfoundedModel(p_confounder=0.2)`` defines
             a structural causal model where each pair has a latent common
             cause with probability 0.2.
         """
         self.assumptions[assumption.identifier] = assumption
-
 
     def sample(self) -> Tuple[np.array, np.array]:
         """
@@ -92,13 +97,14 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         # Pre-process: graph misspecification
 
-        # TODO: add constraints 
+        # TODO: add constraints
         # i.e. unfaithful must be before confounded to avoid cancelling occurring on confounders matrix
         if "unfaithful" in list(self.assumptions.keys()):
             p_unfaithful = self.assumptions["unfaithful"]
-            adjacency, unfaithful_triplets_order = _UnfaithfulMixin.unfaithful_adjacency(
-                adjacency, p_unfaithful
-            )
+            (
+                adjacency,
+                unfaithful_triplets_order,
+            ) = _UnfaithfulMixin.unfaithful_adjacency(adjacency, p_unfaithful)
         if "confounded" in list(self.assumptions.keys()):
             p_confounded = self.assumptions["unfaithful"]
             adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounded)
@@ -109,35 +115,30 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         # Generate the data starting from source nodes
         for i in topological_order(adjacency):
-            parents = np.nonzero(adjacency[:,i])[0]
-            if len(np.nonzero(adjacency[:,i])[0]) > 0:    
-                X[:, i] = self._sample_mechanism(X[:,parents], noise[:, i])
+            parents = np.nonzero(adjacency[:, i])[0]
+            if len(np.nonzero(adjacency[:, i])[0]) > 0:
+                X[:, i] = self._sample_mechanism(X[:, parents], noise[:, i])
 
-                # Autoregressive effect          
+                # Autoregressive effect
                 if "autoregressive" in list(self.assumptions.keys()):
                     order = self.assumptions["autoregressive"]
                     X[:, i] = _AutoregressiveMixin.add_time_lag(X[:, i], order)
 
-
         # Post-process: data misspecification
-        if "measurement error" in  list(self.assumptions.keys()):
+        if "measurement error" in list(self.assumptions.keys()):
             gamma = self.assumptions["measurement error"]
             X = _MeasurementErrorMixin.add_measure_error(X, gamma)
         if "confounded" in list(self.assumptions.keys()):
             d, _ = self.adjacency.shape
             X = _ConfoundedMixin.confound_dataset(X, n_confounders=d)
         if "unfaithful" in list(self.assumptions.keys()):
-            X = _UnfaithfulMixin.unfaithful_dataset(
-                X, noise, unfaithful_triplets_order
-            )
+            X = _UnfaithfulMixin.unfaithful_dataset(X, noise, unfaithful_triplets_order)
 
         return X, self.adjacency
-    
 
     @abstractmethod
     def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         raise NotImplementedError()
-
 
 
 # # * ANM *
@@ -146,15 +147,15 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
 
     The additive noise model is generated as a postnonlinear model with
     the invertible post-nonlinear function being the identity.
-    
+
     Parameters
     ----------
     num_samples : int:
         Number of samples in the dataset
     graph_generator : GraphGenerator
-        Random graph generator implementing the 'get_random_graph' method. 
+        Random graph generator implementing the 'get_random_graph' method.
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
-        Sampler of the noise terms. It can be either a custom implementation of 
+        Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
@@ -163,13 +164,14 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
+
     def __init__(
         self,
         num_samples: int,
         graph_generator: GraphGenerator,
         noise_generator: Union[RandomNoiseDistribution, Distribution],
-        causal_mechanism : PredictionModel,
-        seed: int=None
+        causal_mechanism: PredictionModel,
+        seed: int = None,
     ):
         super().__init__(num_samples, graph_generator, noise_generator, seed)
         self.causal_mechanism = causal_mechanism
@@ -179,18 +181,17 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
         return effect
 
 
-
 class PostNonlinearModel(AdditiveNoiseModel):
     """Class for data generation from a postnonlinear model.
-    
+
     Parameters
     ----------
     num_samples : int:
         Number of samples in the dataset
     graph_generator : GraphGenerator
-        Random graph generator implementing the 'get_random_graph' method. 
+        Random graph generator implementing the 'get_random_graph' method.
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
-        Sampler of the noise terms. It can be either a custom implementation of 
+        Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
@@ -201,26 +202,32 @@ class PostNonlinearModel(AdditiveNoiseModel):
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
+
     def __init__(
         self,
         num_samples: int,
         graph_generator: GraphGenerator,
         noise_generator: Union[RandomNoiseDistribution, Distribution],
-        causal_mechanism : PredictionModel,
-        invertible_function : InvertibleFunction,
-        seed: int=None
+        causal_mechanism: PredictionModel,
+        invertible_function: InvertibleFunction,
+        seed: int = None,
     ):
-        super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
-        
+        super().__init__(
+            num_samples, graph_generator, noise_generator, causal_mechanism, seed
+        )
+
         self.causal_mechanism = causal_mechanism
         self.invertible_function = invertible_function
 
-    
     def make_assumption(self, assumption: Context):
         if assumption.identifier == "unfaithful":
-            raise ValueError("The PostNonlinear model does not support faithfulness violation.")
+            raise ValueError(
+                "The PostNonlinear model does not support faithfulness violation."
+            )
         elif assumption.identifier == "autoregressive":
-            raise ValueError("The PostNonlinear model does not support autoregressive effects violation.")
+            raise ValueError(
+                "The PostNonlinear model does not support autoregressive effects violation."
+            )
         else:
             super().make_assumption(assumption)
 
@@ -251,15 +258,15 @@ class LinearModel(AdditiveNoiseModel):
     """Class for data generation from a linear structural causal model.
 
     The LinearModel is defined as an additive noise model with linear mechanisms.
-    
+
     Parameters
     ----------
     num_samples : int:
         Number of samples in the dataset
     graph_generator : GraphGenerator
-        Random graph generator implementing the 'get_random_graph' method. 
+        Random graph generator implementing the 'get_random_graph' method.
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
-        Sampler of the noise terms. It can be either a custom implementation of 
+        Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
@@ -275,19 +282,21 @@ class LinearModel(AdditiveNoiseModel):
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
+
     def __init__(
         self,
-        num_samples : int, 
-        graph_generator : GraphGenerator,
-        noise_generator :  Union[RandomNoiseDistribution, Distribution],
+        num_samples: int,
+        graph_generator: GraphGenerator,
+        noise_generator: Union[RandomNoiseDistribution, Distribution],
         min_weight: float = -1,
         max_weight: float = 1,
-        min_abs_weight = 0.05,
-        seed: int=None
+        min_abs_weight=0.05,
+        seed: int = None,
     ):
         causal_mechanism = LinearMechanism(min_weight, max_weight, min_abs_weight)
-        super().__init__(num_samples, graph_generator, noise_generator, causal_mechanism, seed)
-        
+        super().__init__(
+            num_samples, graph_generator, noise_generator, causal_mechanism, seed
+        )
 
 
 # * SCM with mixed linear-nonlinear mechanisms *
@@ -299,9 +308,9 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
     num_samples : int:
         Number of samples in the dataset
     graph_generator : GraphGenerator
-        Random graph generator implementing the 'get_random_graph' method. 
+        Random graph generator implementing the 'get_random_graph' method.
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
-        Sampler of the noise terms. It can be either a custom implementation of 
+        Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     linear_mechanism: PredictionModel
         Object for the generation of the linear causal mechanism.
@@ -322,21 +331,23 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
+
     def __init__(
         self,
         num_samples: int,
         graph_generator: GraphGenerator,
         noise_generator: Union[RandomNoiseDistribution, Distribution],
-        linear_mechanism : PredictionModel,
-        nonlinear_mechanism : PredictionModel,
-        linear_fraction = 0.5,
-        seed: int=None
+        linear_mechanism: PredictionModel,
+        nonlinear_mechanism: PredictionModel,
+        linear_fraction=0.5,
+        seed: int = None,
     ):
-        super().__init__(num_samples, graph_generator, noise_generator, nonlinear_mechanism, seed)
+        super().__init__(
+            num_samples, graph_generator, noise_generator, nonlinear_mechanism, seed
+        )
         self._linear_mechanism = linear_mechanism
         self.linear_fraction = linear_fraction
 
-        
     def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         # Randomly sample the type of mechanism: linear or nonlinear
         linear = np.random.binomial(n=1, p=self.linear_fraction) == 1
