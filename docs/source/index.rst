@@ -6,7 +6,7 @@ Welcome to Causally's documentation!
 You can benchmark your brand new causal discovery algorithm on challenging environments: data 
 can be generated under the presence of latent confounders, measurement errors, autoregressive effects, and
 unfaithful path cancelling. Nobody believes that *absence of latent confounders* holds in the real world,
-yet this is commonly assumed by the most prominent methods for causal discovery out there. Evaluation
+yet this is commonly assumed by prominent methods for causal discovery out there. Evaluation
 of algorithms under challenging and realistic scenarios is crucial to deploy safe and robust models.
 ``causally`` enables that: happy causality!
 
@@ -20,7 +20,7 @@ how to :ref:`install <installation>`.
 Cite
 ----
 If you find ``causally`` useful, please consider citing the publication 
-`Assumption violations in causal discovery and the robustness of score matching <https://arxiv.org/abs/2310.13387>`.
+`Assumption violations in causal discovery and the robustness of score matching <https://arxiv.org/abs/2310.13387>`_.
 
 .. code-block::
 
