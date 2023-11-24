@@ -151,7 +151,6 @@ def test_er_small_dense_number_of_edges_and_degree_regularity():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 5
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree": [],
         "max_outcome_degree": [],
@@ -159,7 +158,7 @@ def test_er_small_dense_number_of_edges_and_degree_regularity():
     }
 
     # Construct ER generator
-    generator = ErdosRenyi(num_nodes=num_nodes, p_edge=0.4)
+    generator = ErdosRenyi(num_nodes=num_nodes, p_edge=0.4, min_num_edges=2)
 
     # Generate graphs and store logs
     for _ in range(n_graphs):

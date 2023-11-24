@@ -76,7 +76,7 @@ class GaussianRandomPartition(GraphGenerator):
     ):
         if num_nodes / n_clusters < min_cluster_size:
             raise ValueError(
-                f"Expected ratio ``num_nodes/n_clusters' must be at least {min_cluster_size}"
+                f"Expected ratio ``num_nodes/n_clusters`` must be at least {min_cluster_size}"
                 f" Instead got {num_nodes/n_clusters}. Decrease ``n_clusters`` or ``min_cluster_size``."
             )
 
@@ -172,13 +172,14 @@ class ErdosRenyi(GraphGenerator):
         Expected degree of each node.
     p_edge : float, default is None
         Probability of edge between each pair of nodes.
-    min_num_edges: int, default 0
+    min_num_edges: int, default 2
         The minimum number of edges required in the graph.
-        If 0, allows for empty graphs.
+        If 0, allows for empty graphs. If larger than the maximum number of edges for the DAG,
+        it is set to ``num_nodes * (num_nodes - 1) / 2``.
     """
 
     def __init__(
-        self, num_nodes: int, expected_degree: int = None, p_edge: float = None, min_num_edges: int=0
+        self, num_nodes: int, expected_degree: int = None, p_edge: float = None, min_num_edges: int=2
     ):
         if expected_degree is not None and p_edge is not None:
             raise ValueError(
@@ -191,6 +192,17 @@ class ErdosRenyi(GraphGenerator):
                 "Please provide a value for one and only one argument between"
                 " 'expected_degree' and 'p_edge'."
             )
+        if expected_degree is not None and expected_degree == 0:
+            raise ValueError(
+                "expected value of 'expected_degree' is at least 1. Got 0 instead"
+            )
+        if p_edge is not None and p_edge < 0.1:
+            raise ValueError(
+                "expected value of 'p_edge' is at least 0.1." f" Got {p_edge} instead"
+            )
+        if min_num_edges < 0:
+            raise ValueError("Minimum number of edges must be larger or equals to 0." +
+                             f" Got instead {min_num_edges}.")
 
 
         super().__init__(num_nodes)
@@ -200,7 +212,7 @@ class ErdosRenyi(GraphGenerator):
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
-        A = np.zeros((self.num_nodes, self.num_nodes))
+        A = -np.ones((self.num_nodes, self.num_nodes))
 
         # Ensure at least self.min_num_edges edges (one edge if the graph is bivariate)
         while np.sum(A) < min(self.min_num_edges, max_edges_in_dag(self.num_nodes)):
@@ -237,9 +249,10 @@ class BarabasiAlbert(GraphGenerator):
         Select the preferential attachment strategy. If True,
         new nodes tend to have incoming edge from existing nodes with high out-degree.
         Else, new nodes tend to have outcoming edge towards existing nodes with high in-degree.
-    min_num_edges: int, default 0
+    min_num_edges: int, default 2
         The minimum number of edges required in the graph.
-        If 0, allows for empty graphs.
+        If 0, allows for empty graphs. If larger than the maximum number of edges for the DAG,
+        it is set to ``num_nodes * (num_nodes - 1) / 2``.
     """
 
     def __init__(
@@ -247,8 +260,15 @@ class BarabasiAlbert(GraphGenerator):
         num_nodes: int,
         expected_degree: int,
         preferential_attachment_out: bool = True,
-        min_num_edges: int = 0
+        min_num_edges: int = 2
     ):
+        if expected_degree == 0:
+            raise ValueError(
+                "expected value of 'expected_degree' is at least 1. Got 0 instead"
+            )
+        if min_num_edges < 0:
+            raise ValueError("Minimum number of edges must be larger or equals to 0." +
+                             f" Got instead {min_num_edges}.")
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
@@ -256,7 +276,7 @@ class BarabasiAlbert(GraphGenerator):
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
-        A = np.zeros((self.num_nodes, self.num_nodes))
+        A = -np.ones((self.num_nodes, self.num_nodes))
 
         # Ensure at least self.min_num_edges edges (one edge if the graph is bivariate)
         while np.sum(A) < min(self.min_num_edges, max_edges_in_dag(self.num_nodes)):
