@@ -167,46 +167,43 @@ class ErdosRenyi(GraphGenerator):
     Parameters
     ----------
     num_nodes : int
-        Number of nodes
+        Number of nodes.
     expected_degree : int, default is None
         Expected degree of each node.
     p_edge : float, default is None
         Probability of edge between each pair of nodes.
+    min_num_edges: int, default 0
+        The minimum number of edges required in the graph.
+        If 0, allows for empty graphs.
     """
 
     def __init__(
-        self, num_nodes: int, expected_degree: int = None, p_edge: float = None
+        self, num_nodes: int, expected_degree: int = None, p_edge: float = None, min_num_edges: int=0
     ):
         if expected_degree is not None and p_edge is not None:
             raise ValueError(
-                "Only one parameter between 'p' and 'expected_degree' can be"
+                "Only one parameter between 'p_edge' and 'expected_degree' can be"
                 f" provided. Got instead expected_degree={expected_degree}"
                 f"and p_edge={p_edge}."
             )
         if expected_degree is None and p_edge is None:
             raise ValueError(
-                "Please provide a value for one of argument between"
+                "Please provide a value for one and only one argument between"
                 " 'expected_degree' and 'p_edge'."
             )
-        if expected_degree is not None and expected_degree == 0:
-            raise ValueError(
-                "expected value of 'expected_degree' is at least 1." " Got 0 instead"
-            )
-        if p_edge is not None and p_edge < 0.1:
-            raise ValueError(
-                "expected value of 'p_edge' is at least 0.1." f" Got {p_edge} instead"
-            )
+
 
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
         self.p_edge = p_edge
+        self.min_num_edges = min_num_edges
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
 
-        # Ensure at least two edges (one edge if the graph is bivariate)
-        while np.sum(A) < min(2, max_edges_in_dag(self.num_nodes)):
+        # Ensure at least self.min_num_edges edges (one edge if the graph is bivariate)
+        while np.sum(A) < min(self.min_num_edges, max_edges_in_dag(self.num_nodes)):
             if self.p_edge is not None:
                 undirected_graph = ig.Graph.Erdos_Renyi(n=self.num_nodes, p=self.p_edge)
             elif self.expected_degree is not None:
@@ -233,13 +230,16 @@ class BarabasiAlbert(GraphGenerator):
     Parameters
     ----------
     num_nodes : int
-        Number of nodes
+        Number of nodes.
     expected_degree : int
         Expected degree of each node.
     preferential_attachment_out: bool, default True
         Select the preferential attachment strategy. If True,
         new nodes tend to have incoming edge from existing nodes with high out-degree.
         Else, new nodes tend to have outcoming edge towards existing nodes with high in-degree.
+    min_num_edges: int, default 0
+        The minimum number of edges required in the graph.
+        If 0, allows for empty graphs.
     """
 
     def __init__(
@@ -247,17 +247,19 @@ class BarabasiAlbert(GraphGenerator):
         num_nodes: int,
         expected_degree: int,
         preferential_attachment_out: bool = True,
+        min_num_edges: int = 0
     ):
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
+        self.min_num_edges = min_num_edges 
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)
         A = np.zeros((self.num_nodes, self.num_nodes))
 
-        # Ensure at least two edges (one edge if the graph is bivariate)
-        while np.sum(A) < min(2, max_edges_in_dag(self.num_nodes)):
+        # Ensure at least self.min_num_edges edges (one edge if the graph is bivariate)
+        while np.sum(A) < min(self.min_num_edges, max_edges_in_dag(self.num_nodes)):
             G = ig.Graph.Barabasi(
                 n=self.num_nodes, m=self.expected_degree, directed=True
             )

@@ -173,17 +173,16 @@ if __name__ == "__main__":
                 seed=args.seed + id,
             )
         elif args.scm == "pnl":
-            raise ValueError(
-                "Currently PNL graph generation is not supported. TODO: fix this"
+            model = scm.PostNonlinearModel(
+                num_samples=args.graph_n_samples,
+                graph_generator=graph_generator,
+                noise_generator=noise_generator,
+                causal_mechanism=causal_mechanism,
+                invertible_function=lambda x: x**3, # TODO: pass as script argument
+                seed=args.seed + id,
             )
+        
 
         # generate_and_store_dataset(data_file, groundtruth_file, model)
-        model.make_assumption(context.AutoregressiveModel(order=1))
-        model.make_assumption(context.ConfoundedModel(p_confounder=0.2))
-        model.make_assumption(context.MeasurementErrorModel(gamma=0.5))
-        model.make_assumption(
-            context.UnfaithfulModel(p_unfaithful=0)
-        )  # TODO: p_unfaithful=0 changes the output. I think it is for the seed
         dataset, groundtruth = model.sample()
         print(groundtruth)
-        print(dataset[:5])
