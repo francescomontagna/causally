@@ -142,7 +142,7 @@ class Uniform(Distribution):
     """
 
     def __init__(
-        self, low: Union[float, np.array] = 0.0, high: Union[float, np.array] = 0.0
+        self, low: Union[float, np.array] = 0.0, high: Union[float, np.array] = 1.0
     ):
         super().__init__()
         self.low = low
