@@ -100,14 +100,14 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         # TODO: add constraints
         # i.e. unfaithful must be before confounded to avoid cancelling occurring on confounders matrix
         if "unfaithful" in list(self.assumptions.keys()):
-            p_unfaithful = self.assumptions["unfaithful"]
+            p_unfaithful = self.assumptions["unfaithful"].parameters.p_unfaithful
             (
                 adjacency,
                 unfaithful_triplets_order,
             ) = _UnfaithfulMixin.unfaithful_adjacency(adjacency, p_unfaithful)
         if "confounded" in list(self.assumptions.keys()):
-            p_confounded = self.assumptions["unfaithful"]
-            adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounded)
+            p_confounder = self.assumptions["confounded"].parameters.p_confounder
+            adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounder)
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
@@ -121,12 +121,12 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
                 # Autoregressive effect
                 if "autoregressive" in list(self.assumptions.keys()):
-                    order = self.assumptions["autoregressive"]
+                    order = self.assumptions["autoregressive"].parameters.order
                     X[:, i] = _AutoregressiveMixin.add_time_lag(X[:, i], order)
 
         # Post-process: data misspecification
         if "measurement error" in list(self.assumptions.keys()):
-            gamma = self.assumptions["measurement error"]
+            gamma = self.assumptions["measurement error"].parameters.gamma
             X = _MeasurementErrorMixin.add_measure_error(X, gamma)
         if "confounded" in list(self.assumptions.keys()):
             d, _ = self.adjacency.shape
