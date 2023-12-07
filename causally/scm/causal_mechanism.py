@@ -143,9 +143,6 @@ class NeuralNetMechanism(PredictionModel):
             nn.Linear(n_causes, self.hidden_dim),
             self.activation,
             nn.LayerNorm(self.hidden_dim),
-            # nn.Linear(self.hidden_dim, self.hidden_dim),
-            # self.activation,
-            # nn.LayerNorm(self.hidden_dim),
             nn.Linear(self.hidden_dim, 1),
         )
         self._model.apply(self._weight_init)

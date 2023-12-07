@@ -179,7 +179,11 @@ class ErdosRenyi(GraphGenerator):
     """
 
     def __init__(
-        self, num_nodes: int, expected_degree: int = None, p_edge: float = None, min_num_edges: int=2
+        self,
+        num_nodes: int,
+        expected_degree: int = None,
+        p_edge: float = None,
+        min_num_edges: int = 2,
     ):
         if expected_degree is not None and p_edge is not None:
             raise ValueError(
@@ -201,9 +205,10 @@ class ErdosRenyi(GraphGenerator):
                 "expected value of 'p_edge' is at least 0.1." f" Got {p_edge} instead"
             )
         if min_num_edges < 0:
-            raise ValueError("Minimum number of edges must be larger or equals to 0." +
-                             f" Got instead {min_num_edges}.")
-
+            raise ValueError(
+                "Minimum number of edges must be larger or equals to 0."
+                + f" Got instead {min_num_edges}."
+            )
 
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
@@ -260,19 +265,21 @@ class BarabasiAlbert(GraphGenerator):
         num_nodes: int,
         expected_degree: int,
         preferential_attachment_out: bool = True,
-        min_num_edges: int = 2
+        min_num_edges: int = 2,
     ):
         if expected_degree == 0:
             raise ValueError(
                 "expected value of 'expected_degree' is at least 1. Got 0 instead"
             )
         if min_num_edges < 0:
-            raise ValueError("Minimum number of edges must be larger or equals to 0." +
-                             f" Got instead {min_num_edges}.")
+            raise ValueError(
+                "Minimum number of edges must be larger or equals to 0."
+                + f" Got instead {min_num_edges}."
+            )
         super().__init__(num_nodes)
         self.expected_degree = expected_degree
         self.preferential_attachment_out = preferential_attachment_out
-        self.min_num_edges = min_num_edges 
+        self.min_num_edges = min_num_edges
 
     def get_random_graph(self, seed: int = None) -> np.array:
         self._manual_seed(seed)

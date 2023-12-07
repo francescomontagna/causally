@@ -207,9 +207,9 @@ As simple as that!
 
    import causally.scm.scm as scm
    import causally.graph.random_graph as rg
-   import causally.scm.noise as noise 
+   import causally.scm.noise as noise
    import causally.scm.causal_mechanism as cm
-   import causally.context
+   from causally.scm.context import SCMContext
 
    # Erdos-Renyi graph generator
    graph_generator = rg.ErdosRenyi(num_nodes=10, expected_degree=1)
@@ -220,22 +220,24 @@ As simple as that!
    # Nonlinear causal mechanisms (parametrized with a random neural network)
    causal_mechanism = cm.NeuralNetMechanism()
 
+   # Context for the assumptions
+   context = SCMContext()
+
+   # Make assumption: confounded model
+   context.confounded_model(p_confounder=0.1)
+
+   # Make assumption: unfaithful model
+   context.unfaithful_model(p_unfaithful=0.5)
+
    # Generated the data
    model = scm.AdditiveNoiseModel(
          num_samples=1000,
          graph_generator=graph_generator,
          noise_generator=noise_generator,
          causal_mechanism=causal_mechanism,
+         scm_context=context,
          seed=42
    )
-
-   # Confouded model
-   confounded_model = context.ConfoundedModel()
-   model.make_assumption(confounded_model)
-
-   # Unfaithful distribution
-   unfaithful_model = context.UnfaithfulModel()
-   model.make_assumption(unfaithful_model)
 
    # Sample from the model
    dataset, groundtruth = model.sample()

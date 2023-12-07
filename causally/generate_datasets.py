@@ -178,10 +178,9 @@ if __name__ == "__main__":
                 graph_generator=graph_generator,
                 noise_generator=noise_generator,
                 causal_mechanism=causal_mechanism,
-                invertible_function=lambda x: x**3, # TODO: pass as script argument
+                invertible_function=lambda x: x**3,  # TODO: pass as script argument
                 seed=args.seed + id,
             )
-        
 
         # generate_and_store_dataset(data_file, groundtruth_file, model)
         dataset, groundtruth = model.sample()

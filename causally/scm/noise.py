@@ -45,7 +45,7 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
         # Reshape to run nn.Module
         if len(size) == 1:
-            noise = noise.reshape(-1,1)
+            noise = noise.reshape(-1, 1)
 
         # Pass through the nonlinear mechanism
         noise = self._forward(noise)

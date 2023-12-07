@@ -224,5 +224,4 @@ class _AutoregressiveMixin:
             for k in range(order):
                 X[t] += linear_coeffs[k] * X[t - k]
 
-        # TODO: unit test time lag added on a dataset with two samples and two nodes.
         return X

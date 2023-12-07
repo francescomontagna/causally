@@ -49,18 +49,16 @@ Causally predefines linear and nonlinear causal mechanisms for the definition of
 Challenging assumptions
 -----------------------
 
-Causally allows specifying challenging modelling assumptions on the SCM such as presence of
+Causally allows specifying challenging modeling assumptions on the SCM such as presence of
 latent confounders, unfaithfulness of the data distribution, presence of measurement errors
-and time structure.
+and time structure. Assumptions are specified through an instance of the SCMContext class,
+which acts as a container of the SCM modeling assumptions.
 
 .. currentmodule:: causally.scm.context
 .. autosummary::
    :toctree: generated/
 
-   ConfoundedModel
-   MeasurementErrorModel
-   UnfaithfulModel
-   AutoregressiveModel
+   SCMContext
 
 
 Structural causal models
