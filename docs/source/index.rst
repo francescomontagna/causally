@@ -22,15 +22,15 @@ Cite
 If you find ``causally`` useful, please consider citing the publication 
 `Assumption violations in causal discovery and the robustness of score matching <https://arxiv.org/abs/2310.13387>`_.
 
-.. code-block::
+[montagna23_assumptions]_
 
+.. [montagna23_assumptions] 
     @inproceedings{montagna2023_assumptions,
-        title = {{Assumption violations in causal discovery and the robustness of score matching}},
-        author = {Francesco Montagna and Atalanti A. Mastakouri and Elias Eulig and Nicoletta Noceti and Lorenzo Rosasco and Dominik Janzing and Bryon Aragam and Francesco Locatello},
-        booktitle = {{Advances in Neural Information Processing Systems 37 (NeurIPS)}},
-        year = {2023}
+        title {Assumption violations in causal discovery and the robustness of score matching},
+        author {Francesco Montagna and Atalanti A. Mastakouri and Elias Eulig and Nicoletta Noceti and Lorenzo Rosasco and Dominik Janzing and Bryon Aragam and Francesco Locatello},
+        booktitle {Advances in Neural Information Processing Systems 37 (NeurIPS)},
+        year {2023}
     }
-
 
 Contents
 --------

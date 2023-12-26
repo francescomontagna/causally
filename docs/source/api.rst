@@ -15,6 +15,21 @@ Classes for generation of random graphs.
    BarabasiAlbert
 
 
+Causal mechanisms
+-----------------
+
+Causally predefines linear and nonlinear causal mechanisms for the definition of structural equations.
+
+.. currentmodule:: causally.scm.causal_mechanism
+.. autosummary::
+   :toctree: generated/
+
+   LinearMechanism
+   NeuralNetMechanism
+   GaussianProcessMechanism
+   InvertibleFunction
+
+
 Noise distributions
 -------------------
 
@@ -29,36 +44,6 @@ Classes for random noise generation according to different parametric and nonpar
    Normal
    Exponential
    Uniform
-
-
-Causal mechanisms
------------------
-
-Causally predefines linear and nonlinear causal mechanisms for the definition of structural equations.
-
-.. currentmodule:: causally.scm.causal_mechanism
-.. autosummary::
-   :toctree: generated/
-
-   LinearMechanism
-   NeuralNetMechanism
-   GaussianProcessMechanism
-   InvertibleFunction
-   
-
-Challenging assumptions
------------------------
-
-Causally allows specifying challenging modeling assumptions on the SCM such as presence of
-latent confounders, unfaithfulness of the data distribution, presence of measurement errors
-and time structure. Assumptions are specified through an instance of the SCMContext class,
-which acts as a container of the SCM modeling assumptions.
-
-.. currentmodule:: causally.scm.context
-.. autosummary::
-   :toctree: generated/
-
-   SCMContext
 
 
 Structural causal models
@@ -76,3 +61,21 @@ equations.
    LinearModel
    PostNonlinearModel
    MixedLinearNonlinearModel
+
+
+Challenging assumptions
+-----------------------
+
+Causally allows specifying challenging modeling assumptions on the SCM such as presence of
+latent confounders, unfaithfulness of the data distribution, presence of measurement errors
+and time structure. Assumptions are specified through an instance of the SCMContext class,
+which acts as a container of the SCM modeling assumptions.
+
+.. currentmodule:: causally.scm.context
+.. autosummary::
+   :toctree: generated/
+
+   SCMContext.confounded_model
+   SCMContext.unfaithful_model
+   SCMContext.autoregressive_model
+   SCMContext.measure_err_model
