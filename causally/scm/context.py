@@ -6,6 +6,10 @@ class SCMContext:
         self._measure_error_gamma = None
         self.assumptions = list()
 
+        # Stateful information about violations
+        self._confounded_adjacency = None
+        self._unfaithful_adjacency = None
+
     def confounded_model(self, p_confounder: float):
         """Make the assumption of model with latent confounders.
 
@@ -132,3 +136,32 @@ class SCMContext:
                 + " ``autoregressive_model``."
             )
         return self._autoregressive_order
+
+
+    @property
+    def confounded_adjacency(self):
+        if self._confounded_adjacency is None:
+            raise AttributeError(
+                "confounded_adjacency is None. "
+                + " The confounded adjacency matrix is created in the"
+                + " `sample` method of the BaseStructuralCausalModel class"
+            )
+        return self._confounded_adjacency
+    
+    @confounded_adjacency.setter
+    def confounded_adjacency(self, A):
+        self._confounded_adjacency = A
+
+    @property
+    def unfaithful_adjacency(self):
+        if self._unfaithful_adjacency is None:
+            raise AttributeError(
+                "unfaithful_adjacency is None. "
+                + " The unfaithful adjacency matrix is created in the"
+                + " `sample` method of the BaseStructuralCausalModel class"
+            )
+        return self._unfaithful_adjacency
+    
+    @unfaithful_adjacency.setter
+    def unfaithful_adjacency(self, A):
+        self._unfaithful_adjacency = A

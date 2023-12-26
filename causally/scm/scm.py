@@ -90,17 +90,18 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         # Pre-process: graph misspecification
 
-        # TODO: add constraints
-        # i.e. unfaithful must be before confounded to avoid cancelling occurring on confounders matrix
+        # NOTE: Unfaithful before confounded to avoid cancelling on confounders matrix
         if "unfaithful" in list(self.scm_context.assumptions):
             p_unfaithful = self.scm_context.p_unfaithful
             (
                 adjacency,
                 unfaithful_triplets_order,
             ) = _UnfaithfulMixin.unfaithful_adjacency(adjacency, p_unfaithful)
+            self.scm_context.unfaithful_adjacency = adjacency
         if "confounded" in list(self.scm_context.assumptions):
             p_confounder = self.scm_context.p_confounder
             adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounder)
+            self.scm_context.confounded_adjacency = adjacency
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))

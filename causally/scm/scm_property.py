@@ -2,7 +2,7 @@ import random
 import numpy as np
 import warnings
 from typing import Union, List
-from causally.utils.graph import is_a_collider, find_moral_colliders
+from causally.utils.graph import is_a_moral_collider, find_moral_colliders
 
 
 # Collection of mixing classes for data generation under required assumptions
@@ -165,22 +165,24 @@ class _UnfaithfulMixin:
         unfaithful_adj = adjacency.copy()
         unfaithful_triplets_toporder = list()
 
-        # For each child, if (p1, p2, c) lead to unfaithful deletion of p1 -> c
-        # then I can not reuse p2 in position 1 for future unfaithful deletions
-        fixed_edges = list()
+        # For each child, if (p1, p2, c) lead to unfaithful cancelling of p1 -> c
+        # then p2 -> c can not be cancelled
+        locked_edges = list() # edges that can not be canceled
 
         for triplet in moral_colliders_toporder:
             p1, p2, child = triplet
-            # Check if triplet still has collider in unfaithful_adj
-            if is_a_collider(unfaithful_adj, p1, p2, child) and not (
-                (p1, child) in fixed_edges
+            # Check that triplet is still a moral collider and p1 -> child can be canceled
+            if is_a_moral_collider(unfaithful_adj, p1, p2, child) and not (
+                (p1, child) in locked_edges
             ):
                 if np.random.binomial(n=1, p=p_unfaithful) == 1:
                     unfaithful_adj[p1, child] = 0  # remove p1 -> c
-                    # Remove all others directed paths from the groundtruth and adj graph
-                    unfaithful_triplets_toporder.append(triplet)
-                    if (p2, child) not in fixed_edges:
-                        fixed_edges.append((p2, child))
+                    unfaithful_triplets_toporder.append(triplet) # store triplet involved in canceling
+                    # Update fixed edges
+                    if (p2, child) not in locked_edges:
+                        locked_edges.append((p2, child))
+                    if (p1, p2) not in locked_edges:
+                        locked_edges.append((p1,  p2))
 
         return unfaithful_adj, unfaithful_triplets_toporder
 
