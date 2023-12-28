@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import warnings
-from typing import Union, List
+from typing import Union, List, Dict, Callable
 from causally.utils.graph import is_a_moral_collider, find_moral_colliders
 
 
@@ -109,36 +109,62 @@ class _MeasurementErrorMixin:
 # * Path Canceling Utilities *
 class _UnfaithfulMixin:
     @staticmethod
-    def unfaithful_dataset(
-        X: np.array, noise: np.array, unfaithful_triplets_toporder: List[List[int]]
+    def generate_variable(
+        X: np.array, 
+        node: int,
+        node_noise: np.array,
+        parents: List[int],
+        unfaithful_triplets: List[tuple],
+        sample_mechanism: Callable,
+        child_p1_effects: Dict[int, np.array],
+        child_linear_parents: Dict[int, List[int]]
     ):
-        """Modify X according to the unfaithful SCM.
+        """Generate observations for the input node, accounting for path canceling effects.
 
         Parameters
         ----------
-        X : np.array of shape (num_samples, num_nodes)
-            The input matrix of the data without path cancelling.
-        noise: np.array: of shape (num_samples, num_nodes)
-            Matrix of the SCM additive noise terms.
-        unfaithful_triplets_toporder : List[List[int]]
-            Represent moralized colliders with in unfaithful path cancelling by their causal order.
-            E.g. ``1->0<-2<-1`` is uniquely represented by ``[1, 2, 0]`` topological order of the
-            triplet. To model unfaithfulness, add ``X_noise[:, 2]`` to ``X[0:, ]``
+        X: np.array of shape (num_samples, num_nodes)
+            The input dataset without measurement errors
+        Returns:
+            _type_: _description_
         """
-        # edges_removed = np.transpose(np.nonzero(unfaithful_adj - faithful_adj))
-        added_noise = dict()
-        for ordered_triplet in unfaithful_triplets_toporder:
-            p1, p2, child = ordered_triplet
-            child_added_noise = added_noise.get(child, list())
-            if (
-                p2 not in child_added_noise
-            ):  # Avoid unfaithful effects of p2 on child more than once
-                X[:, child] += noise[:, p2]
-                child_added_noise.append(p2)
-                added_noise[child] = child_added_noise
+        for triplet in unfaithful_triplets:
+            additive_effects = 0 # container of p1 additive effect on p2
+            p1 = triplet[0]
+            p2 = triplet[1]
+            child = triplet[2]
 
-        # TODO: unit test
-        return X
+            # Case 1: node is p2 in triplet
+            # additive effect of f(p1) on p2 and child.
+            if p2 == node:
+                parents -= p1
+                p1_effect = sample_mechanism(X[:, p1],  child_noise=0) # mechanism only, no noise)
+                additive_effects += p1_effect
+                child_p1_effects[child] = child_p1_effects.get(child, default=0) + p1_effect
+
+            # case 2: node is child in triplet
+            elif child == node:
+                parents -= p2
+                child_linear_parents[child] = child_linear_parents.get(child, default=list()).append(p2)
+                
+        # Handle the case in which list of parents is empty due to cancelling
+        total_effect = 0
+        if len(parents) > 0:
+            # node noise always additive in unfaithful graphs
+            total_effect = sample_mechanism(parents=X[:, parents], child_noise=0) + node_noise
+    
+        # Additive p1 effect for each triplet where node == p2
+        total_effect += additive_effects
+
+        # -p2 effects for each triplet where node == child
+        if child_linear_parents.get(node, None) is not None:
+            linear_parents_effect = -sum([X[p] for p in child_linear_parents[node]])
+            total_effect += linear_parents_effect
+
+        # Additive p1 effect for each triplet where node == child: this cancels out with p2 effects
+        if child_p1_effects.get(node, None) is not None:
+            total_effect += child_p1_effects[node]
+        return total_effect
 
     @staticmethod
     def unfaithful_adjacency(adjacency: np.array, p_unfaithful: float):

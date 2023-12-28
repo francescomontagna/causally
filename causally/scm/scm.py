@@ -88,10 +88,11 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         """
         adjacency = self.adjacency.copy()
 
-        # Pre-process: graph misspecification
-
+        # Pre-process for graph misspecification
         # NOTE: Unfaithful before confounded to avoid cancelling on confounders matrix
         if "unfaithful" in list(self.scm_context.assumptions):
+            child_p1_effects = dict()  # key: child, value: sum of p1 values
+            child_linear_parents = dict() # key: child, value: list of p2 parents with linear effects
             p_unfaithful = self.scm_context.p_unfaithful
             (
                 adjacency,
@@ -105,10 +106,12 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
-        X = noise.copy()
+        # X = noise.copy() # NO! Noise is handled by the mechanisms!
+        X = np.zeros(noise.shape)
 
         # Generate the data starting from source nodes
-        for i in topological_order(adjacency):
+        graph_order = topological_order(adjacency)
+        for i in graph_order:
             parents = np.nonzero(adjacency[:, i])[0]
             if len(np.nonzero(adjacency[:, i])[0]) > 0:
                 X[:, i] = self._sample_mechanism(X[:, parents], noise[:, i])
@@ -118,15 +121,20 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
                     order = self.scm_context.autoregressive_order
                     X[:, i] = _AutoregressiveMixin.add_time_lag(X[:, i], order)
 
-        # Post-process: data misspecification
+                # Unfaithful path canceling
+                if "unfaithful" in list(self.scm_context.assumptions):
+                    X[:, i] = _UnfaithfulMixin.generate_variable(
+                        X, i, noise[:, i], parents, unfaithful_triplets_order, \
+                        self._sample_mechanism, child_p1_effects, child_linear_parents
+                    )
+
+        # Post-process for data misspecification
         if "measurement error" in list(self.scm_context.assumptions):
             gamma = self.scm_context.measure_error_gamma
             X = _MeasurementErrorMixin.add_measure_error(X, gamma)
         if "confounded" in list(self.scm_context.assumptions):
             d, _ = self.adjacency.shape
             X = _ConfoundedMixin.confound_dataset(X, n_confounders=d)
-        if "unfaithful" in list(self.scm_context.assumptions):
-            X = _UnfaithfulMixin.unfaithful_dataset(X, noise, unfaithful_triplets_order)
 
         return X, self.adjacency
 
