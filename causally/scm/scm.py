@@ -4,7 +4,7 @@ import numpy as np
 
 from abc import ABCMeta, abstractmethod
 from torch.distributions.distribution import Distribution
-from typing import Union, Tuple, Dict
+from typing import Union, Tuple
 
 from causally.scm.causal_mechanism import (
     PredictionModel,
@@ -19,7 +19,7 @@ from causally.scm.scm_property import (
     _UnfaithfulMixin,
     _AutoregressiveMixin,
 )
-from causally.scm.context import Context
+from causally.scm.context import SCMContext
 from causally.utils.graph import topological_order
 
 
@@ -41,6 +41,10 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     noise_generator :  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
+    scm_context: SCMContext, default  ``None``
+        SCMContext object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an SCMContext object with no
+        assumption specified.
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
@@ -50,6 +54,7 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         num_samples: int,
         graph_generator: GraphGenerator,
         noise_generator: Union[RandomNoiseDistribution, Distribution],
+        scm_context: SCMContext = None,
         seed: int = None,
     ):
         self._set_random_seed(seed)
@@ -57,7 +62,11 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         self.num_samples = num_samples
         self.adjacency = graph_generator.get_random_graph()
         self.noise_generator = noise_generator
-        self.assumptions: Dict[str, Context] = dict()
+
+        if scm_context is not None:
+            self.scm_context = scm_context
+        else:
+            self.scm_context = SCMContext()
 
     def _set_random_seed(self, seed: int):
         """Manually set the random seed. If the seed is None, then do nothing."""
@@ -65,22 +74,6 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
             np.random.seed(seed)
             torch.manual_seed(seed)
             random.seed(seed)
-
-    def make_assumption(self, assumption: Context):
-        """Make an assumption on SCM, e.g. presence of latent confounders.
-
-        Assumptions are defined as instance of Context, and define a
-        modelling assumption on the SCM.
-
-        Parameters
-        ----------
-        assumption: Context
-            The class containing information on the SCM assumption to add.
-            E.g. ``assumption = ConfoundedModel(p_confounder=0.2)`` defines
-            a structural causal model where each pair has a latent common
-            cause with probability 0.2.
-        """
-        self.assumptions[assumption.identifier] = assumption
 
     def sample(self) -> Tuple[np.array, np.array]:
         """
@@ -99,15 +92,15 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         # TODO: add constraints
         # i.e. unfaithful must be before confounded to avoid cancelling occurring on confounders matrix
-        if "unfaithful" in list(self.assumptions.keys()):
-            p_unfaithful = self.assumptions["unfaithful"]
+        if "unfaithful" in list(self.scm_context.assumptions):
+            p_unfaithful = self.scm_context.p_unfaithful
             (
                 adjacency,
                 unfaithful_triplets_order,
             ) = _UnfaithfulMixin.unfaithful_adjacency(adjacency, p_unfaithful)
-        if "confounded" in list(self.assumptions.keys()):
-            p_confounded = self.assumptions["unfaithful"]
-            adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounded)
+        if "confounded" in list(self.scm_context.assumptions):
+            p_confounder = self.scm_context.p_confounder
+            adjacency = _ConfoundedMixin.confound_adjacency(adjacency, p_confounder)
 
         # Sample the noise
         noise = self.noise_generator.sample((self.num_samples, len(adjacency)))
@@ -120,18 +113,18 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
                 X[:, i] = self._sample_mechanism(X[:, parents], noise[:, i])
 
                 # Autoregressive effect
-                if "autoregressive" in list(self.assumptions.keys()):
-                    order = self.assumptions["autoregressive"]
+                if "autoregressive" in list(self.scm_context.assumptions):
+                    order = self.scm_context.autoregressive_order
                     X[:, i] = _AutoregressiveMixin.add_time_lag(X[:, i], order)
 
         # Post-process: data misspecification
-        if "measurement error" in list(self.assumptions.keys()):
-            gamma = self.assumptions["measurement error"]
+        if "measurement error" in list(self.scm_context.assumptions):
+            gamma = self.scm_context.measure_error_gamma
             X = _MeasurementErrorMixin.add_measure_error(X, gamma)
-        if "confounded" in list(self.assumptions.keys()):
+        if "confounded" in list(self.scm_context.assumptions):
             d, _ = self.adjacency.shape
             X = _ConfoundedMixin.confound_dataset(X, n_confounders=d)
-        if "unfaithful" in list(self.assumptions.keys()):
+        if "unfaithful" in list(self.scm_context.assumptions):
             X = _UnfaithfulMixin.unfaithful_dataset(X, noise, unfaithful_triplets_order)
 
         return X, self.adjacency
@@ -161,6 +154,10 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a ``predict`` method.
+    scm_context: SCMContext, default  ``None``
+        SCMContext object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an SCMContext object with no
+        assumption specified.
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
@@ -171,9 +168,12 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
         graph_generator: GraphGenerator,
         noise_generator: Union[RandomNoiseDistribution, Distribution],
         causal_mechanism: PredictionModel,
+        scm_context: SCMContext = None,
         seed: int = None,
     ):
-        super().__init__(num_samples, graph_generator, noise_generator, seed)
+        super().__init__(
+            num_samples, graph_generator, noise_generator, scm_context, seed
+        )
         self.causal_mechanism = causal_mechanism
 
     def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
@@ -199,6 +199,10 @@ class PostNonlinearModel(AdditiveNoiseModel):
         and have a ``predict`` method.
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity. Invertibility required for identifiability.
+    scm_context: SCMContext, default  ``None``
+        SCMContext object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an SCMContext object with no
+        assumption specified.
     seed : int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
@@ -210,26 +214,32 @@ class PostNonlinearModel(AdditiveNoiseModel):
         noise_generator: Union[RandomNoiseDistribution, Distribution],
         causal_mechanism: PredictionModel,
         invertible_function: InvertibleFunction,
+        scm_context: SCMContext = None,
         seed: int = None,
     ):
         super().__init__(
-            num_samples, graph_generator, noise_generator, causal_mechanism, seed
+            num_samples,
+            graph_generator,
+            noise_generator,
+            causal_mechanism,
+            scm_context,
+            seed,
         )
-
+        self._check_assumptions()  # Unfaithfulness and autoregressive not in PNL assumptions.
         self.causal_mechanism = causal_mechanism
         self.invertible_function = invertible_function
 
-    def make_assumption(self, assumption: Context):
-        if assumption.identifier == "unfaithful":
+    def _check_assumptions(self):
+        if "unfaithful" in self.scm_context.assumptions:
             raise ValueError(
                 "The PostNonlinear model does not support faithfulness violation."
+                + " Provide an SCMContext without the assumption of unfaithfulness."
             )
-        elif assumption.identifier == "autoregressive":
+        elif "autoregressive" in self.scm_context.assumptions:
             raise ValueError(
                 "The PostNonlinear model does not support autoregressive effects violation."
+                + " Provide an SCMContext without the assumption of autoregressive effects."
             )
-        else:
-            super().make_assumption(assumption)
 
     def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
         """Generate effect given the direct parents ``X`` and the vector of noise terms.
@@ -272,6 +282,10 @@ class LinearModel(AdditiveNoiseModel):
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a ``predict`` method.
+    scm_context: SCMContext, default  ``None``
+        SCMContext object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an SCMContext object with no
+        assumption specified.
     min_weight: float, default is -1
         Minimum value of causal mechanisms weights
     max_weight: float, default is 1
@@ -288,6 +302,7 @@ class LinearModel(AdditiveNoiseModel):
         num_samples: int,
         graph_generator: GraphGenerator,
         noise_generator: Union[RandomNoiseDistribution, Distribution],
+        scm_context: SCMContext = None,
         min_weight: float = -1,
         max_weight: float = 1,
         min_abs_weight=0.05,
@@ -295,7 +310,12 @@ class LinearModel(AdditiveNoiseModel):
     ):
         causal_mechanism = LinearMechanism(min_weight, max_weight, min_abs_weight)
         super().__init__(
-            num_samples, graph_generator, noise_generator, causal_mechanism, seed
+            num_samples,
+            graph_generator,
+            noise_generator,
+            causal_mechanism,
+            scm_context,
+            seed,
         )
 
 
@@ -323,6 +343,10 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity (not applied to the linear mechanism).
         Invertibility required for identifiability.
+    scm_context: SCMContext, default  ``None``
+        SCMContext object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an SCMContext object with no
+        assumption specified.
     linear_fraction: float, default 0.5
         The fraction of linear mechanisms over the total number of causal relationships.
         E.g. for ``linear_fraction = 0.5`` data are generated from an SCM with half of the
@@ -339,11 +363,17 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
         noise_generator: Union[RandomNoiseDistribution, Distribution],
         linear_mechanism: PredictionModel,
         nonlinear_mechanism: PredictionModel,
+        scm_context: SCMContext = None,
         linear_fraction=0.5,
         seed: int = None,
     ):
         super().__init__(
-            num_samples, graph_generator, noise_generator, nonlinear_mechanism, seed
+            num_samples,
+            graph_generator,
+            noise_generator,
+            nonlinear_mechanism,
+            scm_context,
+            seed,
         )
         self._linear_mechanism = linear_mechanism
         self.linear_fraction = linear_fraction

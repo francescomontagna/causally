@@ -40,18 +40,21 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
         standardize : bool, default False
             If True, remove empirical mean and normalize deviation to one.
         """
-        if len(size) != 2:
-            ValueError(
-                f"Expected number of input dimensions is 2, but were given {len(size)}."
-            )
-
         # Sample from standard normal
         noise = np.random.normal(0, 1, size)
+
+        # Reshape to run nn.Module
+        if len(size) == 1:
+            noise = noise.reshape(-1, 1)
 
         # Pass through the nonlinear mechanism
         noise = self._forward(noise)
         if self.standardize:
             noise = self._standardize(noise)
+
+        # Reshape to the required size
+        if len(size) == 1:
+            noise = noise.squeeze(1)
         return noise
 
     def _standardize(self, noise: np.array) -> np.array:
@@ -214,11 +217,6 @@ class MLPNoise(RandomNoiseDistribution):
 
     @torch.no_grad()
     def _forward(self, X: np.array) -> np.array:
-        if X.ndim != 2:
-            raise ValueError(
-                f"Number of dimensions {X.ndim} different from 2."
-                " If input has 1 dimension, consider reshaping it with reshape(-1, 1)"
-            )
         num_features = X.shape[1]
         torch_X = torch.from_numpy(X)
         layer1 = self._init_params(
