@@ -54,21 +54,21 @@ def topological_order(adjacency: np.array):
 
 
 # * For unfaithful generation *
-def is_a_collider(A: np.array, p1: int, p2: int, c: int):
+def is_a_moral_collider(A: np.array, p1: int, p2: int, c: int):
     """
     Parameters
     ----------
     A : np.array
-        Adj. matrix with potential collider
+        Adj. matrix with potential moral collider
     p1 : int
-        First parent of the potential collider
+        First parent of the potential moral collider
     p2 : int
-        Second parent of the potential collider
+        Second parent of the potential moral collider
     c : int
-        Head of the potential collider
+        Head of the potential moral collider
     """
-    # Check p1 -> c and p2 --> c
-    collider_struct = A[p1, c] == 1 and A[p2, c] == 1
+    # Check p1 -> c and p2 -> c and p1 -> p2
+    collider_struct = A[p1, c] == 1 and A[p2, c] == 1 and A[p1, p2] == 1
     return collider_struct
 
 

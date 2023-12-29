@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from causally.utils.graph import topological_order, find_moral_colliders, is_a_collider
+from causally.utils.graph import topological_order, find_moral_colliders
 from causally.graph.random_graph import ErdosRenyi
 
 

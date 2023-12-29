@@ -20,12 +20,12 @@ class LinearMechanism(PredictionModel):
     Parameters
     ----------
     min_weight: float, default -1
-        Minimum value of causal mechanisms weights
+        Minimum value for the coefficients of the linear mechanisms.
     max_weight: float, default 1
-        Maximum value of causal mechanisms weights
+        Maximum value for the coefficients of the linear mechanisms.
     min_abs_weight: float, default 0.05
-        Minimum value of the absolute value of any causal mechanism weight.
-        Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
+        Smallest allowed absolute value of any linear mechanism coefficient.
+        Low value of ``min_abs_weight`` potentially lead to lambda-unfaithful distributions.
     """
 
     def __init__(
@@ -49,23 +49,28 @@ class LinearMechanism(PredictionModel):
         self.linear_reg = LinearRegression(fit_intercept=False)
 
     def predict(self, X: np.array) -> np.array:
-        """Transform X via a linear causal mechanism.
+        """Apply a linera transformation on X.
+
+        Given a vector ``x`` with :math:`p` features, the output ``y`` is given by:
+
+        .. math::
+
+                y = \sum_{i=1}^p \\alpha_i x_i
+
+        where :math:`\\alpha_i` are random coefficients.
 
         Parameters
         ----------
-        X: np.array of shape (num_samples, num_parents)
-            Samples of the parents to be transformed by the causal mechanism.
+        X: np.array, shape (num_samples, num_parents)
+            Parents' observtations to be transformed by the causal mechanism.
 
         Returns
         -------
-        y: np.array
-            The output of the causal mechanism
+        y:  np.array, shape (num_samples)
+            The output of the causal mechanism.
         """
         if X.ndim != 2:
-            raise ValueError(
-                f"Number of dimensions {X.ndim} different from 2."
-                " If input has 1 dimension, consider reshaping it with reshape(-1, 1)"
-            )
+            X = X.reshape((-1, 1))
         n_covariates = X.shape[1]
 
         # Random initialization of the causal mechanism
@@ -97,10 +102,10 @@ class NeuralNetMechanism(PredictionModel):
     ----------
     weights_mean: float, default 0
         Average value of the initialized weights.
-    weights_std: float, default 0
+    weights_std: float, default 1
         Standard deviation of the initialized weights.
     hidden_dim: int, default 10
-        Number of neurons in the hidden layer
+        Number of neurons in the hidden layer.
     activation: nn.Module, default ``nn.PReLU``
         The nonlinear activation function.
     """
@@ -120,21 +125,23 @@ class NeuralNetMechanism(PredictionModel):
         self._model = None
 
     def predict(self, X: np.array) -> np.array:
-        """Generate the effect given the parents.
+        """Generate the effect given the observations of the parent nodes.
 
-        The effect is generated as a nonlinear function parametrized by a neural network
+        The effect is generated as a nonlinear transformation parametrized by a neural network
         with a single hidden layer.
 
         Parameters
         ----------
-        X : np.array of shape (num_samples, num_parents)
-            Input of the neural network with the parent node instances.
+        X: np.array, shape (num_samples, num_parents)
+            Parents' observtations to be transformed by the causal mechanism.
 
         Returns
         -------
-        effect: np.array of shape (num_samples)
+        y: np.array, shape (num_samples)
             The output of the neural network with X as input.
         """
+        if X.ndim != 2:
+            X = X.reshape((-1, 1))
         n_samples = X.shape[0]
         n_causes = X.shape[1]
 
@@ -157,7 +164,7 @@ class NeuralNetMechanism(PredictionModel):
         return effect.numpy()
 
     def _weight_init(self, module):
-        """Random initialization of model weights."""
+        """Random initialization of the model's weights."""
         if isinstance(module, nn.Linear):
             nn.init.normal_(
                 module.weight.data, mean=self.weights_mean, std=self.weights_std
@@ -165,7 +172,7 @@ class NeuralNetMechanism(PredictionModel):
 
     @property
     def model(self):
-        """Return the nn.Module instance of the neural network architecture."""
+        """nn.Module instance of the neural network architecture."""
         if self._model is None:
             raise ValueError(
                 "Torch model not initialized. Call ``self.predict()`` first"
@@ -174,15 +181,15 @@ class NeuralNetMechanism(PredictionModel):
 
 
 class GaussianProcessMechanism(PredictionModel):
-    """Nonlinear causal mechanism sampled from a gaussian process.
+    """Nonlinear causal mechanism sampled from a Gaussian process.
 
     The nonlinear transformation is generated sampling the effect from a
-    gaussian process with covariance matrix defined as the kernel matrix of the
+    Gaussian process with covariance matrix defined as the kernel matrix of the
     parents' observations.
 
     Parameters
     ----------
-    gamma : float, default 1
+    gamma: float, default 1
         The gamma parameters fixing the variance of the kernel.
         Larger values of gamma determines bigger magnitude of the causal mechanisms.
     """
@@ -191,19 +198,19 @@ class GaussianProcessMechanism(PredictionModel):
         self.rbf = PairwiseKernel(gamma=gamma, metric="rbf")
 
     def predict(self, X: np.array) -> np.array:
-        """Generate the effect given the parents.
+        """Generate the effect given the observations of the parent nodes.
 
         The effect is generated as a nonlinear function sampled from a
         gaussian process.
 
         Parameters
         ----------
-        X : np.array of shape (num_samples, num_parents)
+        X: np.array, shape (num_samples, num_parents)
             Input of the RBF kernel.
 
         Returns
         -------
-        effect: np.array of shape (num_samples)
+        y: np.array, shape (num_samples)
             Causal effect sampled from the gaussian process with
             covariance matrix given by the RBF kernel with X as input.
         """
@@ -219,23 +226,23 @@ class GaussianProcessMechanism(PredictionModel):
 
 # Base class for PostnonLinearModel invertible functions
 class InvertibleFunction:
-    """Invertible functions for the post-nonlinear model abstract class.
+    """Base class for defining invertible functions for the post-nonlinear model.
 
     This class can be used to define the invertible transformation for the
     structural equations of a PostNonlinear model. In order to instantiate
-    an InvertibleFunction, simply pass
+    an InvertibleFunction, simply provide the desired transformation as a Python Callable.
 
     Parameters
     ----------
     function: Callable
-        Python function implementing an invertible mathematical transformation.
+        Function implementing an invertible map.
     """
 
     def __init__(self, function: Callable) -> None:
         self.function = function
 
     def forward(self, input: np.array):
-        """Apply the invertible function to the input."""
+        """Apply the invertible map to the input."""
         return self.function(input)
 
     def __call__(self, input: np.array):

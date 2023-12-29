@@ -10,15 +10,16 @@ Classes for generation of random graphs.
 .. autosummary::
    :toctree: generated/
    
-   GaussianRandomPartition
    ErdosRenyi
    BarabasiAlbert
+   GaussianRandomPartition
+   CustomGraph
 
 
 Causal mechanisms
 -----------------
 
-Causally predefines linear and nonlinear causal mechanisms for the definition of structural equations.
+``causally`` predefines linear and nonlinear causal mechanisms for the definition of structural equations.
 
 .. currentmodule:: causally.scm.causal_mechanism
 .. autosummary::
@@ -48,8 +49,8 @@ Classes for random noise generation according to different parametric and nonpar
 
 Structural causal models
 ------------------------
-Causally implements linear, additive nonlinear, postnonliner structural causal models.
-Additionally, it allows data generation from SCMs with linear and nonlinear structural
+``causally`` implements linear, additive nonlinear, and post-nonlinear structural causal models.
+Additionally, it allows data generation from SCMs with mixed linear and nonlinear structural
 equations.
 
 .. currentmodule:: causally.scm.scm
@@ -66,10 +67,10 @@ equations.
 Challenging assumptions
 -----------------------
 
-Causally allows specifying challenging modeling assumptions on the SCM such as presence of
+``causally`` allows specifying challenging modeling assumptions on the SCM such as presence of
 latent confounders, unfaithfulness of the data distribution, presence of measurement errors
-and time structure. Assumptions are specified through an instance of the SCMContext class,
-which acts as a container of the SCM modeling assumptions.
+and autoregressive effects. Assumptions are specified through an instance of the ``SCMContext``
+class, which serves as a container of the SCM modeling assumptions.
 
 .. currentmodule:: causally.scm.context
 .. autosummary::
