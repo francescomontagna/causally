@@ -62,10 +62,7 @@ class LinearMechanism(PredictionModel):
             The output of the causal mechanism
         """
         if X.ndim != 2:
-            raise ValueError(
-                f"Number of dimensions {X.ndim} different from 2."
-                " If input has 1 dimension, consider reshaping it with reshape(-1, 1)"
-            )
+            X = X.reshape((-1, 1))
         n_covariates = X.shape[1]
 
         # Random initialization of the causal mechanism
@@ -135,6 +132,8 @@ class NeuralNetMechanism(PredictionModel):
         effect: np.array of shape (num_samples)
             The output of the neural network with X as input.
         """
+        if X.ndim != 2:
+            X = X.reshape((-1, 1))
         n_samples = X.shape[0]
         n_causes = X.shape[1]
 

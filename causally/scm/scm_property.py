@@ -113,52 +113,81 @@ class _UnfaithfulMixin:
         X: np.array, 
         node: int,
         node_noise: np.array,
-        parents: List[int],
-        unfaithful_triplets: List[tuple],
+        parents: np.array,
+        unfaithful_triplets: List[tuple[int]],
         sample_mechanism: Callable,
-        child_p1_effects: Dict[int, np.array],
-        child_linear_parents: Dict[int, List[int]]
+        child_p1_effects: Dict[int, np.array]
     ):
         """Generate observations for the input node, accounting for path canceling effects.
 
         Parameters
         ----------
         X: np.array of shape (num_samples, num_nodes)
-            The input dataset without measurement errors
-        Returns:
-            _type_: _description_
+            The input dataset without measurement errors.
+        node: int
+            Index of the random variable to generate.
+        node_noise: np.array of shape (num_samples, )
+            Noise observations of the random variable to generate.
+        parents: np.array
+            List with the indices of the node's parents random variables,
+            according to the unfaithful adjacency.
+        unfaithful_triplets : List[tuple(int)]
+            List of triplets involved in path canceling. Triplets are ordered
+            according to their topological order, e.g. ``1->0<-2``, ``1->2``
+            is uniquely represented by ``[1, 2, 0]`` toporder of the triplet
+        sample_mechanism: Callable
+            The function generating observations from the parents.
+            It takes as argument the parents observations and the noise of the 
+            generated node.
+        child_p1_effects: Dict[int, np.array]
+            Dictionary with key: child index, value: sum of the contributions of
+            p1 parents to the child observations. 
+            Given a triplet (p1, p2, child), path canceling is enforced 
+            by setting p1 effect on p2 and child equal in magnitude and opposite in sign.
+
+        Returns
+        -------
+        total_effect: np.array of shape (num_samples)
+            The observations of the node random variable.       
         """
+        p2_p1_parents = dict() # key: p2, value: list of the p1 parents additive on p2
+        child_linear_parents = dict() # key: pchild, value: list of the p2 parents linear on child
+
+        additive_effects = 0 # container of p1 additive effect on p2
         for triplet in unfaithful_triplets:
-            additive_effects = 0 # container of p1 additive effect on p2
-            p1 = triplet[0]
-            p2 = triplet[1]
-            child = triplet[2]
+            p1, p2, child = triplet
 
             # Case 1: node is p2 in triplet
             # additive effect of f(p1) on p2 and child.
             if p2 == node:
-                parents -= p1
-                p1_effect = sample_mechanism(X[:, p1],  child_noise=0) # mechanism only, no noise)
-                additive_effects += p1_effect
-                child_p1_effects[child] = child_p1_effects.get(child, default=0) + p1_effect
+                parents = np.delete(parents, np.where(parents == p1))
+                p1_effect = sample_mechanism(X[:, p1],  child_noise=0) # mechanism only, no noise
+                child_p1_effects[child] = child_p1_effects.get(child, 0) + p1_effect
+                l = p2_p1_parents.get(p2, list())
+                if p1 not in l: # p1 additive on p2 only once
+                    l.append(p1)
+                    p2_p1_parents[p2] = l
+                    additive_effects += p1_effect
 
             # case 2: node is child in triplet
             elif child == node:
-                parents -= p2
-                child_linear_parents[child] = child_linear_parents.get(child, default=list()).append(p2)
+                parents = np.delete(parents, np.where(parents == p2))
+                l = child_linear_parents.get(child, list())
+                if p2 not in l: # p2 linear effect only once
+                    l.append(p2)
+                    child_linear_parents[child] = l
                 
         # Handle the case in which list of parents is empty due to cancelling
-        total_effect = 0
+        total_effect = node_noise
         if len(parents) > 0:
-            # node noise always additive in unfaithful graphs
-            total_effect = sample_mechanism(parents=X[:, parents], child_noise=0) + node_noise
+            total_effect = sample_mechanism(parents=X[:, parents], child_noise=node_noise)
     
         # Additive p1 effect for each triplet where node == p2
         total_effect += additive_effects
 
         # -p2 effects for each triplet where node == child
         if child_linear_parents.get(node, None) is not None:
-            linear_parents_effect = -sum([X[p] for p in child_linear_parents[node]])
+            linear_parents_effect = -sum([X[:, p] for p in child_linear_parents[node]])
             total_effect += linear_parents_effect
 
         # Additive p1 effect for each triplet where node == child: this cancels out with p2 effects
@@ -192,7 +221,7 @@ class _UnfaithfulMixin:
         unfaithful_triplets_toporder = list()
 
         # For each child, if (p1, p2, c) lead to unfaithful cancelling of p1 -> c
-        # then p2 -> c can not be cancelled
+        # then p2 -> c and p1 -> p2 can not be cancelled
         locked_edges = list() # edges that can not be canceled
 
         for triplet in moral_colliders_toporder:
