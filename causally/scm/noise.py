@@ -15,10 +15,12 @@ class Distribution(metaclass=ABCMeta):
 
 
 class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
-    """Base class for custom generation of random distributions.
+    """Base abstract class for sampling from non-parametric, randomly generated, distributions.
 
     Samples from the random distribution are generated as nonlinear transformations
-    of samples form a standard normal.
+    of samples form a standard normal. Classes inheriting from ``RandomNoiseDistribution``
+    must implement the ``_forward`` method, which defines the nonlinear transformation
+    that is applied to a standard normal sample.
     """
 
     def __init__(self, standardize: bool = False) -> None:
@@ -35,7 +37,7 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
         Returns
         -------
-        noise: np.array of shape (num_samples, num_nodes)
+        noise: np.array, shape (num_samples, num_nodes)
             Sample a random vector of noise terms.
         standardize: bool, default False
             If True, remove empirical mean and normalize deviation to one.
@@ -69,7 +71,7 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
 # *** Wrappers of numpy distributions *** #
 class Normal(Distribution):
-    """Wrapper for np.random.normal() sampler.
+    """Wrapper for ``numpy.random.normal()`` sampler.
 
     Parameters
     ----------
@@ -102,12 +104,12 @@ class Normal(Distribution):
 
 
 class Exponential(Distribution):
-    r"""Wrapper for np.random.exponential() sampler.
+    r"""Wrapper for ``numpy.random.exponential()`` sampler.
 
     Parameters
     ----------
     scale: Union[float, np.array of floats], default 1
-        The scale parameter:math:`\beta = \frac{1}{\lambda}`, must be non-negative.
+        The scale parameter :math:`\beta = \frac{1}{\lambda}`, must be non-negative.
     """
 
     def __init__(self, scale: Union[float, np.array] = 1.0):
@@ -130,18 +132,16 @@ class Exponential(Distribution):
 
 
 class Uniform(Distribution):
-    r"""Wrapper for np.random.uniform() sampler.
+    r"""Wrapper for ``numpy.random.uniform()`` sampler.
 
     Parameters
     ----------
     low: Union[float, np.array of floats], default 0
-        Lower boundary of the output interval. All values generated will be greater than
-        or equal to low. The default value is 0.
+        Lower bound of the output interval. All values generated will be greater than
+        or equal to ``low``.
     high: Union[float, np.array of floats], default 1
-        Upper boundary of the output interval. All values generated will be less than or
-        equal to high. The high limit may be included in the returned array of floats due
-        to floating-point rounding in the equation ``low + (high-low) * random_sample()``.
-        The default value is 1.0.
+        Upper bound of the output interval. All values generated will be less than or
+        equal to ``high``.
     """
 
     def __init__(
@@ -168,17 +168,17 @@ class Uniform(Distribution):
 
 # *** MLP transformation of standard normal *** #
 class MLPNoise(RandomNoiseDistribution):
-    """Neural network to generate samples as transformation of a standard normal.
+    """Samples form adistribution defined by a neural network applied to a standard normal.
 
     Generate a random variable with unknown distribution as a nonlinear transformation of
     a standard Gaussian. The transformation is parametrized by a simple neural network
-    with one hidden layer and nonlinear activations.
+    with one hidden layer and a nonlinear activation.
 
     Parameters
     ----------
     hidden_dim: int, default 100
         Number of neurons in the hidden layer.
-    activation: nn.Module, default ``nn.Sigmoid``
+    activation: nn.Module, default nn.Sigmoid
         The nonlinear activation function.
     bias: bool, default True
         If True, include the bias term.
@@ -191,8 +191,7 @@ class MLPNoise(RandomNoiseDistribution):
     b_bias: float, default 1
         Upper bound for the value of the model bias terms.
     standardize: bool, default False
-        If True, remove the empirical mean and variance from the transformed
-        random variable.
+        If True, remove the empirical mean and variance of the samples.
     """
 
     def __init__(

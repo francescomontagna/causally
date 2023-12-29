@@ -16,15 +16,15 @@ class _ConfoundedMixin:
 
         Parameters
         ----------
-        adjacency: np.array of shape (num_nodes x num_nodes)
+        adjacency: np.array, shape (num_nodes x num_nodes)
             The adjacency matrix without latent confounders.
         p_confounder: float
             The probability of adding a latent common cause between a pair of nodes,
-            sampled as a Bernoulli random variable.
+            parametrizing a Bernoulli random variable.
 
         Returns
         -------
-        confounded_adj: np.array of shape (2*num_nodes, 2*num_nodes)
+        confounded_adj: np.array, shape (2*num_nodes, 2*num_nodes)
             The adjacency matrix with additional latent confounders.
         """
         num_nodes, _ = adjacency.shape
@@ -55,7 +55,7 @@ class _ConfoundedMixin:
 
         Parameters
         ----------
-        X: np.array of shape (num_samples, 2*num_nodes)
+        X: np.array, shape (num_samples, 2*num_nodes)
             The dataset with latent confoudners observations. The columns
             corresponding to confounders' observations are the first ``n_confounders``.
         n_confounders: int
@@ -63,7 +63,7 @@ class _ConfoundedMixin:
 
         Returns
         -------
-        X: np.array of shape (num_samples, num_nodes)
+        X: np.array, shape (num_samples, num_nodes)
             The dataset without latent confounders' observations' columns.
         """
         X = X[:, n_confounders:]
@@ -79,14 +79,14 @@ class _MeasurementErrorMixin:
 
         Parameters
         ----------
-        X: np.array of shape (num_samples, num_nodes)
+        X: np.array, shape (num_samples, num_nodes)
             The input dataset without measurement errors
         gamma: Union[float, List[float]]
             The inverse signal to noise ratio
 
         Returns
         -------
-        X: np.array of shape (num_samples, num_nodes)
+        X: np.array, shape (num_samples, num_nodes)
             The input dataset with measurement error sampled from a zero
             centered gaussian with variance
 
@@ -122,11 +122,11 @@ class _UnfaithfulMixin:
 
         Parameters
         ----------
-        X: np.array of shape (num_samples, num_nodes)
+        X: np.array, shape (num_samples, num_nodes)
             The input dataset without measurement errors.
         node: int
             Index of the random variable to generate.
-        node_noise: np.array of shape (num_samples, )
+        node_noise: np.array, shape (num_samples, )
             Noise observations of the random variable to generate.
         parents: np.array
             List with the indices of the node's parents random variables,
@@ -147,7 +147,7 @@ class _UnfaithfulMixin:
 
         Returns
         -------
-        total_effect: np.array of shape (num_samples)
+        total_effect: np.array, shape (num_samples)
             The observations of the node random variable.
         """
         p2_p1_parents = dict()  # key: p2, value: list of the p1 parents additive on p2
@@ -207,7 +207,7 @@ class _UnfaithfulMixin:
 
         Parameters
         ----------
-        adjacency: np.array of shape (num_nodes, num_nodes)
+        adjacency: np.array, shape (num_nodes, num_nodes)
             The input adjacency matrix faithful to the data distribution.
         p_unfaithful: float
             Probability of  unfaitfhul conditional independence in the presence of
@@ -263,7 +263,7 @@ class _AutoregressiveMixin:
 
         Parameters
         ----------
-        X: np.array of shape (num_samples)
+        X: np.array, shape (num_samples)
             Observations of a random node.
         order: int
             The number of time lags
@@ -274,7 +274,7 @@ class _AutoregressiveMixin:
 
         Returns
         -------
-        X: np.array of shape (num_samples)
+        X: np.array, shape (num_samples)
             Observations of a random node with addition of the time lagged effects.
         """
         if len(X) <= order:

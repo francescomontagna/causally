@@ -15,20 +15,16 @@ class GraphGenerator(metaclass=ABCMeta):
         self.num_nodes = num_nodes
 
     @abstractmethod
-    def get_random_graph(self, seed: int) -> np.array:
-        """Sample the random directed acyclic graph (DAG).
-
-        Parameters
-        ----------
-        seed: int, default None
-            The random seed for the graph generation.
+    def get_random_graph(self) -> np.array:
+        """Sample a random directed acyclic graph (DAG).
 
         Returns
         -------
         A: np.array
             Adjacency matrix representation of the output DAG.
-            The presence of directed edge from node ``i`` to node ``j``
-            is denoted by ``A[i, j] = 1``. Absence of edges is denote by 0.
+            The presence of a directed edge from node ``i`` to node ``j``
+            is denoted by ``A[i, j] = 1``. Absence of the edge is denote by
+            ``A[i, j] = 0``.
         """
         raise NotImplementedError()
 
@@ -59,13 +55,13 @@ class GaussianRandomPartition(GraphGenerator):
     num_nodes: int
         Number of nodes.
     p_in: float
-        Probability of edge connection with nodes in the cluster.
+        Probability of connecting a pair of nodes in the same cluster.
     p_out: float
-        Probability of edge connection with nodes in different clusters.
+        Probability of connecting a pair of nodes in different clusters.
     n_clusters: int
         Number of clusters in the graph.
     min_cluster_size: int, default 2
-        Minimum number of elements for each cluster.
+        Minimum number of nodes in each cluster.
     """
 
     def __init__(
@@ -89,9 +85,7 @@ class GaussianRandomPartition(GraphGenerator):
         self.min_cluster_size = min_cluster_size
         self.size_of_clusters = self._sample_cluster_sizes()
 
-    def get_random_graph(self, seed: int = None) -> np.array:
-        self._manual_seed(seed)
-
+    def get_random_graph(self) -> np.array:
         # Initialize with the first cluster and remove it from the list
         A = self._sample_er_cluster(self.size_of_clusters[0])
         size_of_clusters = np.delete(self.size_of_clusters, [0])
@@ -164,20 +158,27 @@ class ErdosRenyi(GraphGenerator):
     """
     Generator of Erdos-Renyi directed acyclic graphs.
 
-    This class is a wrapper of ``igraph`` Erdos-Renyi graph sampler.
+    This class is a wrapper of the Erdos-Renyi graph sampler of the ``igraph`` Python packege.
 
     Parameters
     ----------
     num_nodes: int
         Number of nodes.
-    expected_degree: int, default is None
+    expected_degree: int, default None
         Expected degree of each node.
-    p_edge: float, default is None
+        The value provided must be greater or equal than 1.
+    p_edge: float, default None
         Probability of edge between each pair of nodes.
+        Accepted values are in the range (0.1, 1]
     min_num_edges: int, default 2
         The minimum number of edges required in the graph.
-        If 0, allows for empty graphs. If larger than the maximum number of edges for the DAG,
-        it is set to ``num_nodes * (num_nodes - 1) / 2``.
+        If 0, allows for empty graphs. The maximum value allowed
+        is ``num_nodes * (num_nodes - 1) / 2``, corresponding to a DAG
+        with all nodes connected.
+
+    Notes
+    -----
+    One and only one parameter between `expected_degree` and `p_edge` must be explicitly provided.
     """
 
     def __init__(
@@ -217,8 +218,7 @@ class ErdosRenyi(GraphGenerator):
         self.p_edge = p_edge
         self.min_num_edges = min_num_edges
 
-    def get_random_graph(self, seed: int = None) -> np.array:
-        self._manual_seed(seed)
+    def get_random_graph(self) -> np.array:
         A = -np.ones((self.num_nodes, self.num_nodes))
 
         # Ensure at least self.min_num_edges edges (one edge if the graph is bivariate)
@@ -244,7 +244,7 @@ class BarabasiAlbert(GraphGenerator):
     """
     Generator of Scale Free directed acyclic graphs.
 
-    This class is a wrapper of ``igraph`` Barabasi graph sampler.
+    This class is a wrapper of the Barabasi graph sampler of the ``igraph`` Python packege.
 
     Parameters
     ----------
@@ -252,14 +252,17 @@ class BarabasiAlbert(GraphGenerator):
         Number of nodes.
     expected_degree: int
         Expected degree of each node.
+        The value provided must be greater or equal than 1.
     preferential_attachment_out: bool, default True
-        Select the preferential attachment strategy. If True,
-        new nodes tend to have incoming edge from existing nodes with high out-degree.
-        Else, new nodes tend to have outcoming edge towards existing nodes with high in-degree.
+        Select whether new nodes are connected to existing nodes by incoming
+        or outcoming edges. If True, new nodes have higher probability of
+        incoming edges from existing nodes with high out-degree. Else, new nodes
+        tend to have outcoming edges towards existing nodes with high in-degree.
     min_num_edges: int, default 2
         The minimum number of edges required in the graph.
-        If 0, allows for empty graphs. If larger than the maximum number of edges for the DAG,
-        it is set to ``num_nodes * (num_nodes - 1) / 2``.
+        If 0, allows for empty graphs. The maximum value allowed
+        is ``num_nodes * (num_nodes - 1) / 2``, corresponding to a DAG
+        with all nodes connected.
     """
 
     def __init__(
@@ -283,8 +286,7 @@ class BarabasiAlbert(GraphGenerator):
         self.preferential_attachment_out = preferential_attachment_out
         self.min_num_edges = min_num_edges
 
-    def get_random_graph(self, seed: int = None) -> np.array:
-        self._manual_seed(seed)
+    def get_random_graph(self) -> np.array:
         A = -np.ones((self.num_nodes, self.num_nodes))
 
         # Ensure at least self.min_num_edges edges (one edge if the graph is bivariate)
@@ -307,9 +309,10 @@ class CustomGraph(GraphGenerator):
     Parameters
     ----------
     adjacency: np.array
-        Adjacency matrix representation of a directed graph
-        The presence of directed edge from node ``i`` to node ``j``
-        is denoted by ``A[i, j] = 1``. Absence of edges is denote by 0.
+        Adjacency matrix representation of the output DAG.
+        The presence of a directed edge from node ``i`` to node ``j``
+        is denoted by ``A[i, j] = 1``. Absence of the edge is denote by
+        ``A[i, j] = 0``.
 
     """
 
@@ -319,8 +322,7 @@ class CustomGraph(GraphGenerator):
         self.adjacency = adjacency
 
     def get_random_graph(self) -> np.array:
-        """Return the adjacency provided as input to the constructor method.
-        """
+        """Return the adjacency provided as input to the constructor method."""
         return self.adjacency
 
 
