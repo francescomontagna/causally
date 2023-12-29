@@ -15,7 +15,7 @@ how to :ref:`install <installation>`.
 
 .. note::
 
-   This project is under active development.
+   Notebooks with examples will be added soon. Stay tuned!
 
 Cite
 ----

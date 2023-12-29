@@ -102,8 +102,8 @@ class SCMContext:
     def measure_err_model(self, gamma: float):
         """Make the assumption of model with measurement error.
 
-        Rather than observing perfectly measure random variables :math:`x_i`
-        in the dataset (where :math:`i` is the index of a node), we observe
+        Rather than observing perfectly measured random variables :math:`x_i`
+        (where :math:`i` is the index of a node), in the dataset we observe
         :math:`\\tilde{x}_i := x_i + \epsilon_i`, where :math:`\epsilon_i` is
         a Gaussian random variable centered at zero, whose variance is parametrized
         by the inverse signal to noise ratio
