@@ -110,13 +110,13 @@ class _MeasurementErrorMixin:
 class _UnfaithfulMixin:
     @staticmethod
     def generate_variable(
-        X: np.array, 
+        X: np.array,
         node: int,
         node_noise: np.array,
         parents: np.array,
         unfaithful_triplets: List[tuple[int]],
         sample_mechanism: Callable,
-        child_p1_effects: Dict[int, np.array]
+        child_p1_effects: Dict[int, np.array],
     ):
         """Generate observations for the input node, accounting for path canceling effects.
 
@@ -131,29 +131,31 @@ class _UnfaithfulMixin:
         parents: np.array
             List with the indices of the node's parents random variables,
             according to the unfaithful adjacency.
-        unfaithful_triplets : List[tuple(int)]
+        unfaithful_triplets: List[tuple(int)]
             List of triplets involved in path canceling. Triplets are ordered
             according to their topological order, e.g. ``1->0<-2``, ``1->2``
             is uniquely represented by ``[1, 2, 0]`` toporder of the triplet
         sample_mechanism: Callable
             The function generating observations from the parents.
-            It takes as argument the parents observations and the noise of the 
+            It takes as argument the parents observations and the noise of the
             generated node.
         child_p1_effects: Dict[int, np.array]
             Dictionary with key: child index, value: sum of the contributions of
-            p1 parents to the child observations. 
-            Given a triplet (p1, p2, child), path canceling is enforced 
+            p1 parents to the child observations.
+            Given a triplet (p1, p2, child), path canceling is enforced
             by setting p1 effect on p2 and child equal in magnitude and opposite in sign.
 
         Returns
         -------
         total_effect: np.array of shape (num_samples)
-            The observations of the node random variable.       
+            The observations of the node random variable.
         """
-        p2_p1_parents = dict() # key: p2, value: list of the p1 parents additive on p2
-        child_linear_parents = dict() # key: pchild, value: list of the p2 parents linear on child
+        p2_p1_parents = dict()  # key: p2, value: list of the p1 parents additive on p2
+        child_linear_parents = (
+            dict()
+        )  # key: pchild, value: list of the p2 parents linear on child
 
-        additive_effects = 0 # container of p1 additive effect on p2
+        additive_effects = 0  # container of p1 additive effect on p2
         for triplet in unfaithful_triplets:
             p1, p2, child = triplet
 
@@ -161,10 +163,12 @@ class _UnfaithfulMixin:
             # additive effect of f(p1) on p2 and child.
             if p2 == node:
                 parents = np.delete(parents, np.where(parents == p1))
-                p1_effect = sample_mechanism(X[:, p1],  child_noise=0) # mechanism only, no noise
+                p1_effect = sample_mechanism(
+                    X[:, p1], child_noise=0
+                )  # mechanism only, no noise
                 child_p1_effects[child] = child_p1_effects.get(child, 0) + p1_effect
                 l = p2_p1_parents.get(p2, list())
-                if p1 not in l: # p1 additive on p2 only once
+                if p1 not in l:  # p1 additive on p2 only once
                     l.append(p1)
                     p2_p1_parents[p2] = l
                     additive_effects += p1_effect
@@ -173,15 +177,17 @@ class _UnfaithfulMixin:
             elif child == node:
                 parents = np.delete(parents, np.where(parents == p2))
                 l = child_linear_parents.get(child, list())
-                if p2 not in l: # p2 linear effect only once
+                if p2 not in l:  # p2 linear effect only once
                     l.append(p2)
                     child_linear_parents[child] = l
-                
+
         # Handle the case in which list of parents is empty due to cancelling
         total_effect = node_noise
         if len(parents) > 0:
-            total_effect = sample_mechanism(parents=X[:, parents], child_noise=node_noise)
-    
+            total_effect = sample_mechanism(
+                parents=X[:, parents], child_noise=node_noise
+            )
+
         # Additive p1 effect for each triplet where node == p2
         total_effect += additive_effects
 
@@ -209,10 +215,10 @@ class _UnfaithfulMixin:
 
         Return
         ------
-        unfaithful_adj : np.array
+        unfaithful_adj: np.array
             Transformed groundtruth adjacency matrix unfaithful to the data distribution.
             unfaithful to the graph
-        unfaithful_triplets_toporder : List[tuple(int)]
+        unfaithful_triplets_toporder: List[tuple(int)]
             Represent moralized colliders by their topological order.
             E.g. ``1->0<-2``, ``1->2`` is uniquely represented by ``[1, 2, 0]`` toporder of the triplet
         """
@@ -222,7 +228,7 @@ class _UnfaithfulMixin:
 
         # For each child, if (p1, p2, c) lead to unfaithful cancelling of p1 -> c
         # then p2 -> c and p1 -> p2 can not be cancelled
-        locked_edges = list() # edges that can not be canceled
+        locked_edges = list()  # edges that can not be canceled
 
         for triplet in moral_colliders_toporder:
             p1, p2, child = triplet
@@ -232,12 +238,14 @@ class _UnfaithfulMixin:
             ):
                 if np.random.binomial(n=1, p=p_unfaithful) == 1:
                     unfaithful_adj[p1, child] = 0  # remove p1 -> c
-                    unfaithful_triplets_toporder.append(triplet) # store triplet involved in canceling
+                    unfaithful_triplets_toporder.append(
+                        triplet
+                    )  # store triplet involved in canceling
                     # Update fixed edges
                     if (p2, child) not in locked_edges:
                         locked_edges.append((p2, child))
                     if (p1, p2) not in locked_edges:
-                        locked_edges.append((p1,  p2))
+                        locked_edges.append((p1, p2))
 
         return unfaithful_adj, unfaithful_triplets_toporder
 

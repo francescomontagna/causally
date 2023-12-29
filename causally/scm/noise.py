@@ -35,9 +35,9 @@ class RandomNoiseDistribution(Distribution, metaclass=ABCMeta):
 
         Returns
         -------
-        noise : np.array of shape (num_samples, num_nodes)
+        noise: np.array of shape (num_samples, num_nodes)
             Sample a random vector of noise terms.
-        standardize : bool, default False
+        standardize: bool, default False
             If True, remove empirical mean and normalize deviation to one.
         """
         # Sample from standard normal
@@ -107,7 +107,7 @@ class Exponential(Distribution):
     Parameters
     ----------
     scale: Union[float, np.array of floats], default 1
-        The scale parameter :math:`\beta = \frac{1}{\lambda}`, must be non-negative.
+        The scale parameter:math:`\beta = \frac{1}{\lambda}`, must be non-negative.
     """
 
     def __init__(self, scale: Union[float, np.array] = 1.0):

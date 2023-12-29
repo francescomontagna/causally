@@ -124,7 +124,7 @@ class NeuralNetMechanism(PredictionModel):
 
         Parameters
         ----------
-        X : np.array of shape (num_samples, num_parents)
+        X: np.array of shape (num_samples, num_parents)
             Input of the neural network with the parent node instances.
 
         Returns
@@ -181,7 +181,7 @@ class GaussianProcessMechanism(PredictionModel):
 
     Parameters
     ----------
-    gamma : float, default 1
+    gamma: float, default 1
         The gamma parameters fixing the variance of the kernel.
         Larger values of gamma determines bigger magnitude of the causal mechanisms.
     """
@@ -197,7 +197,7 @@ class GaussianProcessMechanism(PredictionModel):
 
         Parameters
         ----------
-        X : np.array of shape (num_samples, num_parents)
+        X: np.array of shape (num_samples, num_parents)
             Input of the RBF kernel.
 
         Returns

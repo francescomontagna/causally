@@ -30,22 +30,22 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
     DataGenrator supports generation of linear, nonlinear ANM and PNL
     structural causal model with several distribution of the noise terms.
     The adjacency matrix are sampled according to one model between
-    Erdos-Rényi, Scale-Free, Gaussian Random Process.
+    Erdos-Rényi, Scale-Free, Gaussian Random Process, CustomGraph.
 
     Parameters
     ----------
-    num_samples : int:
+    num_samples: int
         Number of samples in the dataset
-    graph_generator : GraphGenerator
+    graph_generator: GraphGenerator
         Random graph generator implementing the ``get_random_graph`` method.
-    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+    noise_generator:  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
-    scm_context: SCMContext, default  ``None``
-        SCMContext object specifying the modeling assumptions of the SCM.
-        If ``None`` this is equivalent to an SCMContext object with no
+    scm_context: SCMContext, default None
+        ``SCMContext`` object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an ``SCMContext`` object with no
         assumption specified.
-    seed : int, default None
+    seed: int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
 
@@ -81,9 +81,9 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
 
         Returns
         -------
-        X : np.array
+        X: np.array of shape (num_samples, num_nodes)
             Numpy array with the generated dataset.
-        A: np.array
+        A: np.array of shape (num_nodes, num_nodes)
             Numpy adjacency matrix representation of the causal graph.
         """
         adjacency = self.adjacency.copy()
@@ -91,7 +91,9 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         # Pre-process for graph misspecification
         # NOTE: Unfaithful before confounded to avoid cancelling on confounders matrix
         if "unfaithful" in list(self.scm_context.assumptions):
-            child_p1_effects = dict()  # key: child, value: sum of p1 values additive on child
+            child_p1_effects = (
+                dict()
+            )  # key: child, value: sum of p1 values additive on child
             p_unfaithful = self.scm_context.p_unfaithful
             (
                 adjacency,
@@ -112,14 +114,18 @@ class BaseStructuralCausalModel(metaclass=ABCMeta):
         for node in graph_order:
             parents = np.nonzero(adjacency[:, node])[0]
             if len(parents) > 0:
-
                 # Unfaithful path canceling
                 if "unfaithful" in list(self.scm_context.assumptions):
                     X[:, node] = _UnfaithfulMixin.generate_variable(
-                        X, node, noise[:, node], parents, unfaithful_triplets_order, \
-                        self._sample_mechanism, child_p1_effects
+                        X,
+                        node,
+                        noise[:, node],
+                        parents,
+                        unfaithful_triplets_order,
+                        self._sample_mechanism,
+                        child_p1_effects,
                     )
-                
+
                 else:
                     X[:, node] = self._sample_mechanism(X[:, parents], noise[:, node])
 
@@ -152,22 +158,22 @@ class AdditiveNoiseModel(BaseStructuralCausalModel):
 
     Parameters
     ----------
-    num_samples : int:
+    num_samples: int
         Number of samples in the dataset
-    graph_generator : GraphGenerator
+    graph_generator: GraphGenerator
         Random graph generator implementing the 'get_random_graph' method.
-    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+    noise_generator:  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a ``predict`` method.
-    scm_context: SCMContext, default  ``None``
-        SCMContext object specifying the modeling assumptions of the SCM.
-        If ``None`` this is equivalent to an SCMContext object with no
+    scm_context: SCMContext, default None
+        ``SCMContext`` object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an ``SCMContext`` object with no
         assumption specified.
-    seed : int, default None
+    seed: int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
 
@@ -195,11 +201,11 @@ class PostNonlinearModel(AdditiveNoiseModel):
 
     Parameters
     ----------
-    num_samples : int:
+    num_samples: int
         Number of samples in the dataset
-    graph_generator : GraphGenerator
+    graph_generator: GraphGenerator
         Random graph generator implementing the 'get_random_graph' method.
-    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+    noise_generator:  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
@@ -208,11 +214,11 @@ class PostNonlinearModel(AdditiveNoiseModel):
         and have a ``predict`` method.
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity. Invertibility required for identifiability.
-    scm_context: SCMContext, default  ``None``
-        SCMContext object specifying the modeling assumptions of the SCM.
-        If ``None`` this is equivalent to an SCMContext object with no
+    scm_context: SCMContext, default None
+        ``SCMContext`` object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an ``SCMContext`` object with no
         assumption specified.
-    seed : int, default None
+    seed: int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
 
@@ -242,12 +248,12 @@ class PostNonlinearModel(AdditiveNoiseModel):
         if "unfaithful" in self.scm_context.assumptions:
             raise ValueError(
                 "The PostNonlinear model does not support faithfulness violation."
-                + " Provide an SCMContext without the assumption of unfaithfulness."
+                + " Provide an ``SCMContext`` without the assumption of unfaithfulness."
             )
         elif "autoregressive" in self.scm_context.assumptions:
             raise ValueError(
                 "The PostNonlinear model does not support autoregressive effects violation."
-                + " Provide an SCMContext without the assumption of autoregressive effects."
+                + " Provide an ``SCMContext`` without the assumption of autoregressive effects."
             )
 
     def _sample_mechanism(self, parents: np.array, child_noise: np.array) -> np.array:
@@ -280,20 +286,20 @@ class LinearModel(AdditiveNoiseModel):
 
     Parameters
     ----------
-    num_samples : int:
+    num_samples: int
         Number of samples in the dataset
-    graph_generator : GraphGenerator
+    graph_generator: GraphGenerator
         Random graph generator implementing the 'get_random_graph' method.
-    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+    noise_generator:  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     causal_mechanism: PredictionModel
         Object for the generation of the nonlinar causal mechanism.
         The object passed as argument must implement the PredictionModel abstract class,
         and have a ``predict`` method.
-    scm_context: SCMContext, default  ``None``
-        SCMContext object specifying the modeling assumptions of the SCM.
-        If ``None`` this is equivalent to an SCMContext object with no
+    scm_context: SCMContext, default None
+        ``SCMContext`` object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an ``SCMContext`` object with no
         assumption specified.
     min_weight: float, default is -1
         Minimum value of causal mechanisms weights
@@ -302,7 +308,7 @@ class LinearModel(AdditiveNoiseModel):
     min_abs_weight: float, default is 0.05
         Minimum value of the absolute value of any causal mechanism weight.
         Low value of min_abs_weight potentially lead to lambda-unfaithful distributions.
-    seed : int, default None
+    seed: int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
 
@@ -334,11 +340,11 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
 
     Parameters
     ----------
-    num_samples : int:
+    num_samples: int
         Number of samples in the dataset
-    graph_generator : GraphGenerator
+    graph_generator: GraphGenerator
         Random graph generator implementing the 'get_random_graph' method.
-    noise_generator :  Union[RandomNoiseDistribution, Distribution]
+    noise_generator:  Union[RandomNoiseDistribution, Distribution]
         Sampler of the noise terms. It can be either a custom implementation of
         the base class RandomNoiseDistribution, or a torch Distribution.
     linear_mechanism: PredictionModel
@@ -352,16 +358,16 @@ class MixedLinearNonlinearModel(AdditiveNoiseModel):
     invertible_function: InvertibleFunction
         Invertible post-nonlinearity (not applied to the linear mechanism).
         Invertibility required for identifiability.
-    scm_context: SCMContext, default  ``None``
-        SCMContext object specifying the modeling assumptions of the SCM.
-        If ``None`` this is equivalent to an SCMContext object with no
+    scm_context: SCMContext, default None
+        ``SCMContext`` object specifying the modeling assumptions of the SCM.
+        If ``None`` this is equivalent to an ``SCMContext`` object with no
         assumption specified.
     linear_fraction: float, default 0.5
         The fraction of linear mechanisms over the total number of causal relationships.
         E.g. for ``linear_fraction = 0.5`` data are generated from an SCM with half of the
         structural equations with linear causal mechanisms. Be aware that linear mechanisms
         are not identifiable in case of additive noise term.
-    seed : int, default None
+    seed: int, default None
         Seed for reproducibility. If None, then random seed not set.
     """
 

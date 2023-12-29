@@ -13,6 +13,7 @@ Classes for generation of random graphs.
    GaussianRandomPartition
    ErdosRenyi
    BarabasiAlbert
+   CustomGraph
 
 
 Causal mechanisms

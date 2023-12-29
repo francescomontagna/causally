@@ -4,6 +4,8 @@ import numpy as np
 import networkx as nx
 from abc import ABCMeta, abstractmethod
 
+from numpy.core.multiarray import array as array
+
 from causally.utils.graph import max_edges_in_dag
 
 
@@ -54,13 +56,13 @@ class GaussianRandomPartition(GraphGenerator):
 
     Parameters
     ----------
-    num_nodes : int
+    num_nodes: int
         Number of nodes.
-    p_in : float
+    p_in: float
         Probability of edge connection with nodes in the cluster.
-    p_out : float
+    p_out: float
         Probability of edge connection with nodes in different clusters.
-    n_clusters : int
+    n_clusters: int
         Number of clusters in the graph.
     min_cluster_size: int, default 2
         Minimum number of elements for each cluster.
@@ -133,9 +135,9 @@ class GaussianRandomPartition(GraphGenerator):
 
         Parameters
         ----------
-        A : np.array
+        A: np.array
             Current adjacency matrix
-        c_size : int
+        c_size: int
             Size of the cluster to generate
         """
         # Join the graphs by block matrices
@@ -166,11 +168,11 @@ class ErdosRenyi(GraphGenerator):
 
     Parameters
     ----------
-    num_nodes : int
+    num_nodes: int
         Number of nodes.
-    expected_degree : int, default is None
+    expected_degree: int, default is None
         Expected degree of each node.
-    p_edge : float, default is None
+    p_edge: float, default is None
         Probability of edge between each pair of nodes.
     min_num_edges: int, default 2
         The minimum number of edges required in the graph.
@@ -246,9 +248,9 @@ class BarabasiAlbert(GraphGenerator):
 
     Parameters
     ----------
-    num_nodes : int
+    num_nodes: int
         Number of nodes.
-    expected_degree : int
+    expected_degree: int
         Expected degree of each node.
     preferential_attachment_out: bool, default True
         Select the preferential attachment strategy. If True,
@@ -297,6 +299,29 @@ class BarabasiAlbert(GraphGenerator):
         # Permute to avoid trivial ordering
         A = self._make_random_order(A)
         return A
+
+
+class CustomGraph(GraphGenerator):
+    """Generator of user-specified, deterministic, graphs
+
+    Parameters
+    ----------
+    adjacency: np.array
+        Adjacency matrix representation of a directed graph
+        The presence of directed edge from node ``i`` to node ``j``
+        is denoted by ``A[i, j] = 1``. Absence of edges is denote by 0.
+
+    """
+
+    def __init__(self, adjacency: np.array):
+        num_nodes = len(adjacency)
+        super().__init__(num_nodes)
+        self.adjacency = adjacency
+
+    def get_random_graph(self) -> np.array:
+        """Return the adjacency provided as input to the constructor method.
+        """
+        return self.adjacency
 
 
 # ********************** #

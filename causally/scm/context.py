@@ -53,10 +53,10 @@ class SCMContext:
         """Make the assumption of model with time lagged autoregressive effects.
 
         Structural equations take the following autoregressive form:
-        
-        .. math:: 
-        
-                X_i(t):= f_i(\operatorname{PA}_i(t)) + N_i + \sum_{k=t-\operatorname{order}} \\alpha(k)*X_i(k)
+
+        .. math::
+
+                X_i(t):= f_i(\operatorname{PA}_i(t)) + N_i + \sum_{k=t-\operatorname{order}} \\alpha(k) X_i(k)
 
         where :math:`f_i` is the nonlinear causal mechanism,
         :math:`N_i` is the noise term of the structural equation,
@@ -137,7 +137,6 @@ class SCMContext:
             )
         return self._autoregressive_order
 
-
     @property
     def confounded_adjacency(self):
         if self._confounded_adjacency is None:
@@ -147,7 +146,7 @@ class SCMContext:
                 + " `sample` method of the BaseStructuralCausalModel class"
             )
         return self._confounded_adjacency
-    
+
     @confounded_adjacency.setter
     def confounded_adjacency(self, A):
         self._confounded_adjacency = A
@@ -161,7 +160,7 @@ class SCMContext:
                 + " `sample` method of the BaseStructuralCausalModel class"
             )
         return self._unfaithful_adjacency
-    
+
     @unfaithful_adjacency.setter
     def unfaithful_adjacency(self, A):
         self._unfaithful_adjacency = A
