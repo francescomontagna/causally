@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from typing import Union
+from scipy import stats
+from typing import Union, Callable
 from abc import ABCMeta, abstractmethod
 
 
@@ -164,6 +165,109 @@ class Uniform(Distribution):
                 f"Expected number of input dimensions is 2, but were given {len(size)}."
             )
         return np.random.uniform(self.low, self.high, size)
+    
+
+# TODO: unit test
+class Gumbel(Distribution):
+    """Wrapper for ``numpy.random.gumbel()`` sampler.
+
+    Parameters
+    ----------
+    loc: Union[float, np.array of floats], default 0
+        The mean of the sample.
+    std: Union[float, np.array of floats], default 1
+        The standard deviation of the sample.
+    """
+
+    def __init__(
+        self, loc: Union[float, np.array] = 0.0, scale: Union[float, np.array] = 1.0
+    ):
+        super().__init__()
+        self.loc = loc
+        self.scale = scale
+
+    def sample(self, size: tuple[int]) -> np.array:
+        """Draw random samples from a Gumbel distribution.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Required shape of the random sample.
+        """
+        if len(size) != 2:
+            ValueError(
+                f"Expected number of input dimensions is 2, but were given {len(size)}."
+            )
+        return np.random.gumbel(self.loc, self.scale, size)
+    
+
+# TODO: unit test
+class Beta(Distribution):
+    """Wrapper for ``numpy.random.beta()`` sampler.
+
+    Parameters
+    ----------
+    a: Union[float, np.array of floats], default 1
+        Alpha, > 0
+    b: Union[float, np.array of floats], default 1
+        Beta, > 0
+    """
+
+    def __init__(
+        self, a: Union[float, np.array] = 1.0, b: Union[float, np.array] = 1.0
+    ):
+        super().__init__()
+        self.a = a
+        self.b = b
+
+    def sample(self, size: tuple[int]) -> np.array:
+        """Draw random samples from a beta distribution.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Required shape of the random sample.
+        """
+        if len(size) != 2:
+            ValueError(
+                f"Expected number of input dimensions is 2, but were given {len(size)}."
+            )
+        return np.random.beta(self.a, self.b, size)
+    
+
+# TODO: unit test
+class Gamma(Distribution):
+    """Wrapper for ``numpy.random.gamma()`` sampler.
+
+    Parameters
+    ----------
+    shape: Union[float, np.array of floats], default 1
+        The shape of the gamma distribution. Must be non-negative.
+    scale: Union[float, np.array of floats], default 1
+        The scale of the gamma distribution. Must be non-negative. Default is equal to 1.
+    """
+
+    def __init__(
+        self, shape: Union[float, np.array] = 1.0, scale: Union[float, np.array] = 1.0
+    ):
+        super().__init__()
+        self.shape = shape
+        self.scale = scale
+
+    def sample(self, size: tuple[int]) -> np.array:
+        """Draw random samples from a gamma distribution.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Required shape of the random sample.
+        """
+        if len(size) != 2:
+            ValueError(
+                f"Expected number of input dimensions is 2, but were given {len(size)}."
+            )
+        return np.random.gamma(self.shape, self.scale, size)
+    
 
 
 # *** MLP transformation of standard normal *** #
@@ -241,3 +345,49 @@ class MLPNoise(RandomNoiseDistribution):
         if layer.bias is not None:
             nn.init.uniform_(layer.bias, a=self.a_bias, b=self.b_bias)
         return layer
+
+
+
+# Sample from custom pdf
+# TODO: Unit test (e.g. Gaussian pdf close to numpy gaussian)
+class _ScipyDistribution(stats.rv_continuous):
+    def __init__(self, pdf: Callable, a: float=None, b: float=None) -> None:
+        super().__init__(a=a, b=b) # a, b: lower and upperbounds of the support
+        self.input_pdf = pdf
+
+    def _pdf(self, x: float) -> float:
+        return self.input_pdf(x)
+    
+
+class CustomNoise(Distribution):
+
+    def __init__(self, pdf: Callable, a: float=None, b: float=None) -> None:
+        """_summary_
+
+        Args:
+            pdf (Callable): _description_
+            a (float, optional): lower bound of the support's distribution
+            b (float, optional): lower bound of the support's distribution
+        """
+        self.pdf = _ScipyDistribution(pdf)
+
+    def sample(self, size: tuple[int]) -> np.array:
+        """Sample random noise of the required input size.
+
+        Parameters
+        ----------
+        size: tuple[int]
+            Tuple with information (num_samples, num_variables). 
+
+        Returns
+        -------
+        noise : np.array of shape (num_samples, num_variables)
+            The array of samples from the input pdf.
+        """
+        noise = self.pdf.rvs(size=size)            
+        
+        # Reshape to run nn.Module
+        if len(size) == 1:
+            noise = noise.reshape(-1, 1)
+
+        return noise
