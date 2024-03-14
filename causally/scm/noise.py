@@ -362,14 +362,26 @@ class _ScipyDistribution(stats.rv_continuous):
 class CustomNoise(Distribution):
 
     def __init__(self, pdf: Callable, a: float=None, b: float=None) -> None:
-        """_summary_
+        """Noise sampler from a random variable with a user-specified distribution.
 
-        Args:
-            pdf (Callable): _description_
-            a (float, optional): lower bound of the support's distribution
-            b (float, optional): lower bound of the support's distribution
+        The random variable is sampled subclassing `scipy.stats.rv_continuous`.
+        See `<https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.html>`
+        for documentation.
+
+        Parameters
+        ----------
+        pdf: Callable
+            PDF function, e.g.
+            lambda x : math.sqrt(1/2*math.pi)*math.exp(-0.5*x^2) for a standard normal.
+        a: float, default None
+            lower bound of the support's distribution. If None, minus infinity.
+        b: float, default None
+            upper bound of the support's distribution. If None, plus infinity.
+
+        Note:
+            No explicit check on the distibution is done
         """
-        self.pdf = _ScipyDistribution(pdf)
+        self.pdf = _ScipyDistribution(pdf, a, b)
 
     def sample(self, size: tuple[int]) -> np.array:
         """Sample random noise of the required input size.
