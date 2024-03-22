@@ -31,7 +31,7 @@ def test_given_dags_when_running_topological_order_then_order_is_correct():
     num_nodes = 10
     generator = ErdosRenyi(num_nodes=num_nodes, p_edge=1)  # fully connected
     for i in range(20):
-        A = generator.get_random_graph(seed=i + 42)
+        A = generator.get_random_graph()
         pred_order = topological_order(A)
         errors = top_order_errors(A, pred_order)
         assert (

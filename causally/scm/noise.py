@@ -167,7 +167,6 @@ class Uniform(Distribution):
         return np.random.uniform(self.low, self.high, size)
     
 
-# TODO: unit test
 class Gumbel(Distribution):
     """Wrapper for ``numpy.random.gumbel()`` sampler.
 
@@ -201,7 +200,6 @@ class Gumbel(Distribution):
         return np.random.gumbel(self.loc, self.scale, size)
     
 
-# TODO: unit test
 class Beta(Distribution):
     """Wrapper for ``numpy.random.beta()`` sampler.
 
@@ -235,7 +233,6 @@ class Beta(Distribution):
         return np.random.beta(self.a, self.b, size)
     
 
-# TODO: unit test
 class Gamma(Distribution):
     """Wrapper for ``numpy.random.gamma()`` sampler.
 

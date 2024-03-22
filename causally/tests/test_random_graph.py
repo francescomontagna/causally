@@ -109,7 +109,6 @@ def test_er_small_sparse_number_of_edges_and_degree_regularity():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 5
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree": [],
         "max_outcome_degree": [],
@@ -238,7 +237,6 @@ def test_er_medium_dense_number_of_edges_and_degree_regularity():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 10
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree": [],
         "max_outcome_degree": [],
@@ -333,7 +331,6 @@ def test_er_large_dense_number_of_edges_and_degree_regularity():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 50
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree": [],
         "max_outcome_degree": [],
@@ -382,7 +379,6 @@ def test_sf_medium_sparse_irregular_degree():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 10
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree": [],
         "max_outcome_degree": [],
@@ -421,7 +417,6 @@ def test_sf_large_sparse_irregular_degree():
     # Hyperparameters and logging
     n_graphs = 100
     num_nodes = 50
-    run_seeds = np.random.randint(10000, size=n_graphs)
     logs = {
         "max_income_degree": [],
         "max_outcome_degree": [],
@@ -532,7 +527,7 @@ def test_grp_clusters_er_regular_degree_behaviour():
             min_cluster_size=min_cluster_size,
         )
         for _ in generator.size_of_clusters:
-            A = generator.get_random_graph(seed=num_nodes)
+            A = generator.get_random_graph()
             max_income_degree = np.max(A.sum(axis=0))
             max_outcome_degree = np.max(A.sum(axis=1))
             logs["max_income_degree"] = logs["max_income_degree"] + [max_income_degree]
