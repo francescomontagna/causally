@@ -224,6 +224,17 @@ class GaussianProcessMechanism(PredictionModel):
         return effect
 
 
+# Class for the implementation fo custom mechanisms
+# TODO: unit test
+class CustomMechanism(PredictionModel):
+    def __init__(self, mechanism: Callable):
+        super().__init__()
+        self.mechanism = mechanism
+
+    def predict(self, X: np.array) -> np.array:
+        return np.squeeze(self.mechanism(X), -1)
+
+
 # Base class for PostnonLinearModel invertible functions
 class InvertibleFunction:
     """Base class for defining invertible functions for the post-nonlinear model.
@@ -247,3 +258,4 @@ class InvertibleFunction:
 
     def __call__(self, input: np.array):
         return self.forward(input)
+    

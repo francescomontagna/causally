@@ -10,7 +10,8 @@
 venv
 
 # Test scripts
-causally/quick_test.py
+**/quick_test.py
+**/generate_datasets.py
 
 # Images
 plots
