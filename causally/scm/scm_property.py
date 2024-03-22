@@ -287,6 +287,6 @@ class _AutoregressiveMixin:
         linear_coeffs = np.random.uniform(weight_a, weight_b, (order,))
         for t in range(order, len(X)):
             for k in range(order):
-                X[t] += linear_coeffs[k] * X[t - k]
+                X[t] += linear_coeffs[k] * X[t-k-1]
 
         return X
