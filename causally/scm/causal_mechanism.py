@@ -108,6 +108,8 @@ class NeuralNetMechanism(PredictionModel):
         Number of neurons in the hidden layer.
     activation: nn.Module, default ``nn.PReLU``
         The nonlinear activation function.
+    scaling: float, default 1
+        Multiplicative scaling factor applied to the value of the output.
     """
 
     def __init__(
@@ -116,11 +118,13 @@ class NeuralNetMechanism(PredictionModel):
         weights_std: float = 1.0,
         hidden_dim: int = 10,
         activation: nn.Module = nn.PReLU(),
+        scaling: float = 1
     ):
         self.weights_mean = weights_mean
         self.weights_std = weights_std
         self.hidden_dim = hidden_dim
         self.activation = activation
+        self.scaling = scaling
 
         self._model = None
 
@@ -160,6 +164,9 @@ class NeuralNetMechanism(PredictionModel):
 
         # Forward pass
         effect = np.reshape(self.model(data).data, (n_samples,))
+
+        # Apply scaling factor
+        effect = self.scaling*effect
 
         return effect.numpy()
 
