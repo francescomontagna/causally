@@ -234,12 +234,34 @@ class GaussianProcessMechanism(PredictionModel):
 # Class for the implementation fo custom mechanisms
 # TODO: unit test
 class CustomMechanism(PredictionModel):
+    """Generate causal effects with user specified causal mechanism functional form.
+    """
     def __init__(self, mechanism: Callable):
+        """
+        Parameters
+        ----------
+        mechanism: Callable
+            Function specifying the causal mechanism mapping a cause to its effect.
+        """
         super().__init__()
         self.mechanism = mechanism
 
     def predict(self, X: np.array) -> np.array:
-        return np.squeeze(self.mechanism(X), -1)
+        """Generate the effect given the observations of the parent nodes.
+
+        Parameters
+        ----------
+        X: np.array, shape (num_samples, num_parents)
+            Input of the custom causal mechanism.
+
+        y: np.array, shape (num_samples)
+            Causal effect sampled from the required causal mechanism.
+            Samples of the causal effects are given by `self.mechanism(X)`.
+        """
+        y = self.mechanism(X)
+        if np.ndim(y) == 2:
+            y = np.squeeze(y, -1)
+        return y
 
 
 # Base class for PostnonLinearModel invertible functions
