@@ -25,10 +25,15 @@ If you find ``causally`` useful, please consider citing the publication
 .. code-block:: latex
 
     @inproceedings{montagna2023_assumptions,
-        title {Assumption violations in causal discovery and the robustness of score matching},
-        author {Francesco Montagna and Atalanti A. Mastakouri and Elias Eulig and Nicoletta Noceti and Lorenzo Rosasco and Dominik Janzing and Bryon Aragam and Francesco Locatello},
-        booktitle {Advances in Neural Information Processing Systems 37 (NeurIPS)},
-        year {2023}
+        author = {Montagna, Francesco and Mastakouri, Atalanti and Eulig, Elias and Noceti, Nicoletta and Rosasco, Lorenzo and Janzing, Dominik and Aragam, Bryon and Locatello, Francesco},
+        booktitle = {Advances in Neural Information Processing Systems},
+        editor = {A. Oh and T. Neumann and A. Globerson and K. Saenko and M. Hardt and S. Levine},
+        pages = {47339--47378},
+        publisher = {Curran Associates, Inc.},
+        title = {Assumption violations in causal discovery and the robustness of score matching},
+        url = {https://proceedings.neurips.cc/paper_files/paper/2023/file/93ed74938a54a73b5e4c52bbaf42ca8e-Paper-Conference.pdf},
+        volume = {36},
+        year = {2023}
     }
 
 Contents
