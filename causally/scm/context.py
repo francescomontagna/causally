@@ -156,7 +156,7 @@ class SCMContext:
                 + " model with measurement error on the data, call the method"
                 + " ``measure_err_model``."
             )
-        return self._p_confounder
+        return self._measure_error_gamma
 
     @property
     def autoregressive_order(self):
