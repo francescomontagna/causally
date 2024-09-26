@@ -43,7 +43,7 @@ def topological_order(adjacency: np.array):
     mask = np.zeros((num_nodes))
     for _ in range(num_nodes):
         children_per_node = (
-            adjacency.sum(axis=1) + mask
+            adjacency.sum(axis=1) + mask - adjacency[:,order].sum(axis=1)
         )  # adjacency[i, j] = 1 --> i parent of j
         leaf = np.argmin(children_per_node)  # find leaf as node with no children
         mask[leaf] += float("inf")  # select node only once
