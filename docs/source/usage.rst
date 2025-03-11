@@ -13,8 +13,7 @@ To use ``causally``, first install it via pip:
 
    $ pip install causally
 
-Dependencies
-------------
+This will additionally install the following dependencies:
 
 * `numpy>=1.25.2`
 * `torch>=2.0.1`
