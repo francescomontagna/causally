@@ -15,11 +15,11 @@ To use ``causally``, first install it via pip:
 
 This will additionally install the following dependencies:
 
-* `numpy>=1.25.2`
-* `torch>=2.0.1`
-* `scikit-learn>=1.3.0`
-* `networkx>=3.1`
-* `python-igraph>=0.11.2`
+* numpy>=1.25.2
+* torch>=2.0.1
+* scikit-learn>=1.3.0
+* networkx>=3.1
+* python-igraph>=0.11.2
 
 For development purposes, install in editable mode:
 
