@@ -7,21 +7,29 @@ Installation
 ------------
 
 
-.. What about git clone + pip install . until the library is not completely ready?
-To use ``causally``, first install it cloning the project via git:
+To use ``causally``, first install it via pip:
+
+.. code-block:: console
+
+   $ pip install causally
+
+   Dependencies
+   ------------
+
+   * `numpy>=1.25.2`
+   * `torch>=2.0.1`
+   * `scikit-learn>=1.3.0`
+   * `networkx>=3.1`
+   * `python-igraph>=0.11.2`
+
+For development purposes, install in editable mode:
 
 .. code-block:: console
 
    $ git clone https://github.com/francescomontagna/causally.git
    $ cd 'path/to/causally'
-   $ pip install .
-
-For development purposes, install in editable mode (``pip install -e .``)
-
-.. .. code-block:: console
-
-..    $ pip install causally
-
+   $ pip install -e .
+   
 
 Graph generation
 ----------------
